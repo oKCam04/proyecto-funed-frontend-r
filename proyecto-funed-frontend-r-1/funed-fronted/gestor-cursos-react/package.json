@@ -1,0 +1,30 @@
+{
+  "name": "gestor-cursos-react",
+  "version": "1.0.0",
+  "description": "Aplicación para gestionar cursos, incluyendo funcionalidades para crear, listar, editar y eliminar cursos.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "keywords": [
+    "react",
+    "cursos",
+    "gestión"
+  ],
+  "author": "Tu Nombre",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-scripts": "5.0.0"
+  },
+  "devDependencies": {},
+  "homepage": "http://tu-url-de-proyecto.com",
+  "repository": {
+    "type": "git",
+    "url": "http://tu-repositorio-git.com"
+  }
+}
