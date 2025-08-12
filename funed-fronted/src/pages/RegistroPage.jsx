@@ -1,298 +1,396 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import Button from '../components/Button'
 
+
 function RegistroPage() {
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
-    email: '',
-    tipoIdentificacion: 'cedula', // Valor por defecto
+    tipoIdentificacion: '',
     numeroIdentificacion: '',
     fechaNacimiento: '',
-    telefono: '',
+    email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    telefono: '',
+    acepta_terminos: false
   })
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [emailSent, setEmailSent] = useState(false)
-  
+  const [errors, setErrors] = useState({})
+  const [isLoading, setIsLoading] = useState(false)
+
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value
-    })
+    const { name, value, type, checked } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }))
+    // Limpiar error del campo cuando el usuario empiece a escribir
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }))
+    }
   }
-  
-  // Función para simular el envío de un correo de activación
-  const sendActivationEmail = async (email) => {
-    // Simulamos una llamada a API con un retraso
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log(`Correo de activación enviado a: ${email}`)
-        resolve(true)
-      }, 1500) // Simulamos 1.5 segundos de retraso
-    })
+
+  const validateForm = () => {
+    const newErrors = {}
+
+    if (!formData.nombre.trim()) {
+      newErrors.nombre = 'El nombre es requerido'
+    }
+
+    if (!formData.apellido.trim()) {
+      newErrors.apellido = 'El apellido es requerido'
+    }
+
+    if (!formData.tipoIdentificacion) {
+      newErrors.tipoIdentificacion = 'El tipo de identificación es requerido'
+    }
+
+    if (!formData.numeroIdentificacion.trim()) {
+      newErrors.numeroIdentificacion = 'El número de identificación es requerido'
+    }
+
+    if (!formData.fechaNacimiento) {
+      newErrors.fechaNacimiento = 'La fecha de nacimiento es requerida'
+    } else {
+      const today = new Date()
+      const birthDate = new Date(formData.fechaNacimiento)
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const monthDiff = today.getMonth() - birthDate.getMonth()
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      
+      if (age < 16) {
+        newErrors.fechaNacimiento = 'Debes tener al menos 16 años para registrarte'
+      }
+    }
+
+    if (!formData.email) {
+      newErrors.email = 'El email es requerido'
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'El email no es válido'
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'La contraseña es requerida'
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'La contraseña debe tener al menos 6 caracteres'
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Confirma tu contraseña'
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Las contraseñas no coinciden'
+    }
+
+    if (!formData.telefono.trim()) {
+      newErrors.telefono = 'El teléfono es requerido'
+    }
+
+    if (!formData.acepta_terminos) {
+      newErrors.acepta_terminos = 'Debes aceptar los términos y condiciones'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    // Limpiar mensajes previos
-    setError('')
-    setSuccess('')
     
-    // Validación básica
-    if (
-      !formData.nombre || 
-      !formData.apellido || 
-      !formData.email || 
-      !formData.tipoIdentificacion || 
-      !formData.numeroIdentificacion || 
-      !formData.fechaNacimiento || 
-      !formData.telefono || 
-      !formData.password
-    ) {
-      setError('Por favor, completa todos los campos')
+    if (!validateForm()) {
       return
     }
-    
-    if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden')
-      return
-    }
-    
-    // Validar formato de correo electrónico
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
-      setError('Por favor, introduce un correo electrónico válido')
-      return
-    }
-    
+
+    setIsLoading(true)
+
     try {
-      setLoading(true)
+      // Generar token de verificación
+      const verificationToken = emailService.generateVerificationToken()
       
-      // Simulación de registro exitoso
-      console.log('Registro con:', formData)
+      // Simular registro en la base de datos
+      await new Promise(resolve => setTimeout(resolve, 1000))
       
-      // Enviar correo de activación
-      const emailSent = await sendActivationEmail(formData.email)
+      // Enviar email de verificación
+      await emailService.sendVerificationEmail(
+        formData.email,
+        `${formData.nombre} ${formData.apellido}`,
+        verificationToken
+      )
       
-      if (emailSent) {
-        setEmailSent(true)
-        setSuccess(`¡Registro exitoso! Hemos enviado un correo de activación a ${formData.email}. Por favor, revisa tu bandeja de entrada para activar tu cuenta.`)
-        
-        // Limpiar el formulario después del registro exitoso
-        setFormData({
-          nombre: '',
-          apellido: '',
-          email: '',
-          tipoIdentificacion: 'cedula',
-          numeroIdentificacion: '',
-          fechaNacimiento: '',
-          telefono: '',
-          password: '',
-          confirmPassword: ''
-        })
-      }
+      // Guardar datos temporales (sin activar la cuenta)
+      localStorage.setItem('pendingUser', JSON.stringify({
+        ...formData,
+        verificationToken,
+        verified: false,
+        createdAt: new Date().toISOString()
+      }))
+      
+      // Redirigir a página de verificación de email
+      navigate(`/verificar-email?email=${encodeURIComponent(formData.email)}`)
+      
     } catch (error) {
-      console.error('Error durante el registro:', error)
-      setError('Ocurrió un error durante el registro. Por favor, inténtalo de nuevo.')
+      setErrors({ general: 'Error al crear la cuenta. Intenta nuevamente.' })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
-  
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Crear una cuenta</h2>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Crear Cuenta
+          </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            ¿Ya tienes una cuenta?{' '}
-            <Link to="/login" className="font-medium text-blue-800 hover:text-blue-700">
+            ¿Ya tienes cuenta?{' '}
+            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
               Inicia sesión aquí
             </Link>
           </p>
         </div>
         
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            <span className="block sm:inline">{error}</span>
-          </div>
-        )}
-        
-        {success && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-            <span className="block sm:inline">{success}</span>
-          </div>
-        )}
-        
-        {!emailSent ? (
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="rounded-md shadow-sm space-y-4">
-              {/* Nombre y Apellido */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                  <input
-                    id="nombre"
-                    name="nombre"
-                    type="text"
-                    required
-                    className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="Nombre"
-                    value={formData.nombre}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="apellido" className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
-                  <input
-                    id="apellido"
-                    name="apellido"
-                    type="text"
-                    required
-                    className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="Apellido"
-                    value={formData.apellido}
-                    onChange={handleChange}
-                  />
-                </div>
+        <div className="bg-white rounded-lg shadow-md p-8">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {errors.general && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+                {errors.general}
               </div>
-              
-              {/* Tipo y Número de Identificación */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="tipoIdentificacion" className="block text-sm font-medium text-gray-700 mb-1">Tipo de Identificación</label>
-                  <select
-                    id="tipoIdentificacion"
-                    name="tipoIdentificacion"
-                    required
-                    className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    value={formData.tipoIdentificacion}
-                    onChange={handleChange}
-                  >
-                    <option value="cedula">Cédula</option>
-                    <option value="pasaporte">Pasaporte</option>
-                    <option value="tarjeta_identidad">Tarjeta de Identidad</option>
-                    <option value="otro">Otro</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="numeroIdentificacion" className="block text-sm font-medium text-gray-700 mb-1">Número de Identificación</label>
-                  <input
-                    id="numeroIdentificacion"
-                    name="numeroIdentificacion"
-                    type="text"
-                    required
-                    className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="Número de Identificación"
-                    value={formData.numeroIdentificacion}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-              
-              {/* Fecha de Nacimiento y Teléfono */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="fechaNacimiento" className="block text-sm font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
-                  <input
-                    id="fechaNacimiento"
-                    name="fechaNacimiento"
-                    type="date"
-                    required
-                    className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    value={formData.fechaNacimiento}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="telefono" className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                  <input
-                    id="telefono"
-                    name="telefono"
-                    type="tel"
-                    required
-                    className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="Teléfono"
-                    value={formData.telefono}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-              
-              {/* Correo Electrónico */}
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+                <label htmlFor="nombre" className="block text-sm font-medium text-gray-700">
+                  Nombre
+                </label>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Correo electrónico"
-                  value={formData.email}
+                  id="nombre"
+                  name="nombre"
+                  type="text"
+                  value={formData.nombre}
                   onChange={handleChange}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.nombre ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="Tu nombre"
                 />
+                {errors.nombre && (
+                  <p className="mt-1 text-sm text-red-600">{errors.nombre}</p>
+                )}
               </div>
-              
-              {/* Contraseña y Confirmación */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    required
-                    className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="Contraseña"
-                    value={formData.password}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña</label>
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    required
-                    className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="Confirmar contraseña"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                  />
-                </div>
+
+              <div>
+                <label htmlFor="apellido" className="block text-sm font-medium text-gray-700">
+                  Apellido
+                </label>
+                <input
+                  id="apellido"
+                  name="apellido"
+                  type="text"
+                  value={formData.apellido}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.apellido ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="Tu apellido"
+                />
+                {errors.apellido && (
+                  <p className="mt-1 text-sm text-red-600">{errors.apellido}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="tipoIdentificacion" className="block text-sm font-medium text-gray-700">
+                  Tipo de Identificación
+                </label>
+                <select
+                  id="tipoIdentificacion"
+                  name="tipoIdentificacion"
+                  value={formData.tipoIdentificacion}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.tipoIdentificacion ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Seleccionar tipo</option>
+                  <option value="cedula">Cédula Nacional</option>
+                  <option value="pasaporte">Pasaporte</option>
+                  <option value="dimex">DIMEX</option>
+                  <option value="didi">DIDI</option>
+                </select>
+                {errors.tipoIdentificacion && (
+                  <p className="mt-1 text-sm text-red-600">{errors.tipoIdentificacion}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="numeroIdentificacion" className="block text-sm font-medium text-gray-700">
+                  Número de Identificación
+                </label>
+                <input
+                  id="numeroIdentificacion"
+                  name="numeroIdentificacion"
+                  type="text"
+                  value={formData.numeroIdentificacion}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.numeroIdentificacion ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="123456789"
+                />
+                {errors.numeroIdentificacion && (
+                  <p className="mt-1 text-sm text-red-600">{errors.numeroIdentificacion}</p>
+                )}
               </div>
             </div>
 
             <div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Procesando...' : 'Registrarse'}
+              <label htmlFor="fechaNacimiento" className="block text-sm font-medium text-gray-700">
+                Fecha de Nacimiento
+              </label>
+              <input
+                id="fechaNacimiento"
+                name="fechaNacimiento"
+                type="date"
+                value={formData.fechaNacimiento}
+                onChange={handleChange}
+                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.fechaNacimiento ? 'border-red-300' : 'border-gray-300'
+                }`}
+              />
+              {errors.fechaNacimiento && (
+                <p className="mt-1 text-sm text-red-600">{errors.fechaNacimiento}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Correo Electrónico
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.email ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="tu@email.com"
+              />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="telefono" className="block text-sm font-medium text-gray-700">
+                Teléfono
+              </label>
+              <input
+                id="telefono"
+                name="telefono"
+                type="tel"
+                value={formData.telefono}
+                onChange={handleChange}
+                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.telefono ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="+506 1234-5678"
+              />
+              {errors.telefono && (
+                <p className="mt-1 text-sm text-red-600">{errors.telefono}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Contraseña
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.password ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="••••••••"
+              />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                Confirmar Contraseña
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="••••••••"
+              />
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center">
+                <input
+                  id="acepta_terminos"
+                  name="acepta_terminos"
+                  type="checkbox"
+                  checked={formData.acepta_terminos}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="acepta_terminos" className="ml-2 block text-sm text-gray-900">
+                  Acepto los{' '}
+                  <a href="#" className="text-blue-600 hover:text-blue-500">
+                    términos y condiciones
+                  </a>{' '}
+                  y la{' '}
+                  <a href="#" className="text-blue-600 hover:text-blue-500">
+                    política de privacidad
+                  </a>
+                </label>
+              </div>
+              {errors.acepta_terminos && (
+                <p className="mt-1 text-sm text-red-600">{errors.acepta_terminos}</p>
+              )}
+            </div>
+
+            <div>
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
               </Button>
             </div>
           </form>
-        ) : (
-          <div className="mt-6 text-center">
-            <p className="mb-4">Revisa tu correo electrónico para activar tu cuenta.</p>
-            <Button 
-              type="button" 
-              className="mt-4" 
-              onClick={() => {
-                setEmailSent(false)
-                setSuccess('')
-              }}
-            >
-              Volver al formulario
-            </Button>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )
