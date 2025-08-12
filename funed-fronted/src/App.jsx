@@ -32,6 +32,7 @@ function App() {
             <Route path="/admin/cursos/editar/:id" element={<AdminCursoForm />} />
             <Route path="/sobre-nosotros" element={<SobreNosotrosPage />} />
             <Route path="/contacto" element={<ContactoPage />} />
+            {/* routeeeeeeeeeeeeeeeees*/}
           </Routes>
         </main>
         <Footer />
