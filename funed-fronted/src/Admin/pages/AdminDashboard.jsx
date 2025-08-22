@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import Button from '../components/Button'
+import Button from '../../components/Button'
 
 function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -184,7 +184,7 @@ function AdminDashboard() {
               </Button>
             </Link>
           </div>
-          
+
           <div className="text-center py-8 text-gray-500">
             <p className="mb-4">Accede a la gestión completa de cursos</p>
             <Link to="/admin/cursos">

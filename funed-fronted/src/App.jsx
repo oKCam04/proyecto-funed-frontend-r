@@ -7,7 +7,7 @@ import CourseDetailPage from './pages/CourseDetailPage'
 import LoginPage from './pages/LoginPage'
 import RegistroPage from './pages/RegistroPage'
 import EmailVerificationPage from './pages/EmailVerificationPage'
-import AdminDashboard from './pages/AdminDashboard'
+import AdminDashboard from './Admin/pages/AdminDashboard'
 import AdminCursos from './pages/AdminCursos'
 import AdminCursoForm from './pages/AdminCursoForm'
 import SobreNosotrosPage from './pages/SobreNosotrosPage'
@@ -32,7 +32,7 @@ function App() {
             <Route path="/admin/cursos/editar/:id" element={<AdminCursoForm />} />
             <Route path="/sobre-nosotros" element={<SobreNosotrosPage />} />
             <Route path="/contacto" element={<ContactoPage />} />
-            {/* routeeeeeeeeeeeeeeeees*/}
+            {/* routee*/}
           </Routes>
         </main>
         <Footer />
