@@ -1,5 +1,6 @@
 import Card from '../components/Card'
 import FunedLogo from '../components/FunedLogo'
+import Navbar from '../components/Navbar'
 
 function Home() {
   return (
