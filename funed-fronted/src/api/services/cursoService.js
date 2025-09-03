@@ -1,24 +1,24 @@
-import axiosClient from '../api/axiosClient';
+import axiosClient from '../axiosClient';
 
 const cursosService = {
   list: async (params) => {
-    const { data } = await axiosClient.get('/cursos', { params });
+    const { data } = await axiosClient.get('/api/cursos', { params });
     return data;
   },
   getById: async (id) => {
-    const { data } = await axiosClient.get(`/cursos/${id}`);
+    const { data } = await axiosClient.get(`/api/cursos/${id}`);
     return data;
   },
   create: async (payload) => {
-    const { data } = await axiosClient.post('/cursos', payload);
+    const { data } = await axiosClient.post('/api/cursos', payload);
     return data;
   },
   update: async (id, payload) => {
-    const { data } = await axiosClient.put(`/cursos/${id}`, payload);
+    const { data } = await axiosClient.put(`/api/cursos/${id}`, payload);
     return data;
   },
   remove: async (id) => {
-    const { data } = await axiosClient.delete(`/cursos/${id}`);
+    const { data } = await axiosClient.delete(`/api/cursos/${id}`);
     return data;
   },
 };

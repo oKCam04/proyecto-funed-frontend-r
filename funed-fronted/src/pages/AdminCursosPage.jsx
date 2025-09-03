@@ -1,152 +1,170 @@
-import { useState, useEffect } from 'react'
-import Card from '../components/Card'
-import Button from '../components/Button'
+import { useEffect, useMemo, useState } from "react";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import { cursoService } from "../services/cursoService";
 
 function AdminCursosPage() {
-  // Estados para gestionar los cursos y el formulario
-  const [cursos, setCursos] = useState([
-    {
-      id: 1,
-      titulo: "Maquillaje Profesional",
-      descripcion: "Aprende técnicas avanzadas de maquillaje para eventos especiales y sesiones fotográficas",
-      categoria: "maquillaje",
-      duracion: "6 semanas",
-      nivel: "Principiante",
-      precio: "299.99",
-      imagen: "https://via.placeholder.com/300x200/1e40af/FFFFFF?text=Maquillaje"
-    },
-    // Otros cursos iniciales...
-  ])
-  
+  const [cursos, setCursos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // filtros
+  const [searchTerm, setSearchTerm] = useState("");
+  const [tipoFiltro, setTipoFiltro] = useState("todos");
+
+  // form (alineado a tu API)
   const [formData, setFormData] = useState({
     id: null,
-    titulo: '',
-    descripcion: '',
-    categoria: 'maquillaje',
-    duracion: '',
-    nivel: 'Principiante',
-    precio: '',
-    imagen: 'https://via.placeholder.com/300x200/1e40af/FFFFFF?text=Nuevo'
-  })
-  
-  const [editMode, setEditMode] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('todos')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+    nombreCurso: "",
+    duracion: "", // horas (number)
+    temario: "",
+    tipoCurso: "",
+  });
+  const [editMode, setEditMode] = useState(false);
 
-  const categorias = [
-    { id: 'todos', nombre: 'Todos los cursos' },
-    { id: 'maquillaje', nombre: 'Maquillaje' },
-    { id: 'estetica', nombre: 'Estética' },
-    { id: 'peluqueria', nombre: 'Peluquería' },
-    { id: 'manicura', nombre: 'Manicura' }
-  ]
+  // Cargar
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const data = await cursoService.getAll();
+        setCursos(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error(err);
+        setError(
+          err?.response?.status === 401
+            ? "No autorizado (401). Inicia sesión nuevamente."
+            : "Error al cargar cursos."
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  const niveles = ['Principiante', 'Intermedio', 'Avanzado']
+  // Filtro
+  const filtered = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return cursos.filter((c) => {
+      const byText =
+        !q ||
+        c.nombreCurso?.toLowerCase().includes(q) ||
+        c.temario?.toLowerCase().includes(q) ||
+        c.tipoCurso?.toLowerCase().includes(q);
+      const byTipo = tipoFiltro === "todos" || c.tipoCurso === tipoFiltro;
+      return byText && byTipo;
+    });
+  }, [cursos, searchTerm, tipoFiltro]);
 
-  // Filtrar cursos según búsqueda y categoría
-  const filteredCursos = cursos.filter(curso => {
-    const matchesSearch = curso.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         curso.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === 'todos' || curso.categoria === selectedCategory
-    return matchesSearch && matchesCategory
-  })
-
-  // Manejar cambios en el formulario
+  // Handlers form
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value
-    })
-  }
+    const { name, value } = e.target;
+    setFormData((s) => ({ ...s, [name]: value }));
+  };
 
-  // Limpiar el formulario
   const resetForm = () => {
     setFormData({
       id: null,
-      titulo: '',
-      descripcion: '',
-      categoria: 'maquillaje',
-      duracion: '',
-      nivel: 'Principiante',
-      precio: '',
-      imagen: 'https://via.placeholder.com/300x200/1e40af/FFFFFF?text=Nuevo'
-    })
-    setEditMode(false)
-  }
+      nombreCurso: "",
+      duracion: "",
+      temario: "",
+      tipoCurso: "",
+    });
+    setEditMode(false);
+  };
 
-  // Manejar envío del formulario
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    setError('')
-    setSuccess('')
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
 
-    // Validación básica
-    if (!formData.titulo || !formData.descripcion || !formData.duracion || !formData.precio) {
-      setError('Por favor, completa todos los campos obligatorios')
-      return
+    const { nombreCurso, duracion, temario, tipoCurso, id } = formData;
+    if (!nombreCurso || !duracion || !temario || !tipoCurso) {
+      setError("Completa todos los campos obligatorios.");
+      return;
     }
 
-    if (editMode) {
-      // Actualizar curso existente
-      setCursos(cursos.map(curso => 
-        curso.id === formData.id ? formData : curso
-      ))
-      setSuccess(`El curso "${formData.titulo}" ha sido actualizado correctamente`)
-    } else {
-      // Crear nuevo curso
-      const newCurso = {
-        ...formData,
-        id: Date.now() // Generar ID único basado en timestamp
+    const payload = {
+      nombreCurso,
+      duracion: Number(duracion),
+      temario,
+      tipoCurso,
+    };
+
+    try {
+      if (editMode && id != null) {
+        const updated = await cursoService.update(id, payload);
+        setCursos((list) => list.map((c) => (c.id === updated.id ? updated : c)));
+        setSuccess(`"${updated.nombreCurso}" actualizado correctamente.`);
+      } else {
+        const created = await cursoService.create(payload);
+        setCursos((list) => [created, ...list]);
+        setSuccess(`"${created.nombreCurso}" creado correctamente.`);
       }
-      setCursos([...cursos, newCurso])
-      setSuccess(`El curso "${formData.titulo}" ha sido creado correctamente`)
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      setError(
+        err?.response?.status === 401
+          ? "No autorizado (401). Verifica tu sesión/token."
+          : err?.response?.data?.message || "No se pudo guardar el curso."
+      );
     }
+  };
 
-    // Limpiar formulario después de enviar
-    resetForm()
-  }
-
-  // Editar curso
   const handleEdit = (id) => {
-    const cursoToEdit = cursos.find(curso => curso.id === id)
-    if (cursoToEdit) {
-      setFormData(cursoToEdit)
-      setEditMode(true)
-      // Desplazar hacia el formulario
-      document.getElementById('curso-form').scrollIntoView({ behavior: 'smooth' })
-    }
-  }
+    const c = cursos.find((x) => x.id === id);
+    if (!c) return;
+    setFormData({
+      id: c.id,
+      nombreCurso: c.nombreCurso ?? "",
+      duracion: c.duracion ?? "",
+      temario: c.temario ?? "",
+      tipoCurso: c.tipoCurso ?? "",
+    });
+    setEditMode(true);
+    document.getElementById("curso-form")?.scrollIntoView({ behavior: "smooth" });
+  };
 
-  // Eliminar curso
-  const handleDelete = (id) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este curso? Esta acción no se puede deshacer.')) {
-      const cursoToDelete = cursos.find(curso => curso.id === id)
-      setCursos(cursos.filter(curso => curso.id !== id))
-      setSuccess(`El curso "${cursoToDelete.titulo}" ha sido eliminado correctamente`)
-      
-      // Si estamos editando el curso que se eliminó, resetear el formulario
-      if (formData.id === id) {
-        resetForm()
-      }
-    }
-  }
+  const handleDelete = async (id) => {
+    const c = cursos.find((x) => x.id === id);
+    if (!c) return;
+    const ok = window.confirm(`¿Eliminar el curso "${c.nombreCurso}"?`);
+    if (!ok) return;
 
-  // Duplicar curso (para ofrecer variantes)
-  const handleDuplicate = (id) => {
-    const cursoToDuplicate = cursos.find(curso => curso.id === id)
-    if (cursoToDuplicate) {
-      const duplicatedCurso = {
-        ...cursoToDuplicate,
-        id: Date.now(),
-        titulo: `${cursoToDuplicate.titulo} (Copia)`
-      }
-      setCursos([...cursos, duplicatedCurso])
-      setSuccess(`Se ha creado una copia del curso "${cursoToDuplicate.titulo}"`)
+    try {
+      await cursoService.remove(id);
+      setCursos((list) => list.filter((x) => x.id !== id));
+      setSuccess(`"${c.nombreCurso}" eliminado correctamente.`);
+      if (formData.id === id) resetForm();
+    } catch (err) {
+      console.error(err);
+      setError(
+        err?.response?.status === 401
+          ? "No autorizado (401). Verifica tu sesión/token."
+          : "No se pudo eliminar el curso."
+      );
     }
-  }
+  };
+
+  // Tipos (si no vienen de la API, puedes fijar algunos sugeridos)
+  const tiposSugeridos = [
+    "Técnico",
+    "Curso corto",
+    "Diplomado",
+    "Seminario",
+    "Workshop",
+  ];
+
+  const uniqueTipos = [
+    "todos",
+    ...Array.from(new Set(cursos.map((c) => c.tipoCurso).filter(Boolean))),
+  ];
+
+  // Utils
+  const fmtDate = (s) =>
+    s ? new Date(s).toLocaleString() : "";
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -155,163 +173,122 @@ function AdminCursosPage() {
           Administración de Cursos
         </h1>
 
-        {/* Mensajes de error y éxito */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
             <span className="block sm:inline">{error}</span>
           </div>
         )}
-        
         {success && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6">
             <span className="block sm:inline">{success}</span>
           </div>
         )}
 
-        {/* Formulario de creación/edición */}
+        {/* ---------- Form Crear/Editar ---------- */}
         <Card className="mb-8" id="curso-form">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-            {editMode ? 'Editar Curso' : 'Crear Nuevo Curso'}
+            {editMode ? "Editar curso" : "Crear nuevo curso"}
           </h2>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre del curso *
+                </label>
                 <input
                   type="text"
-                  name="titulo"
-                  value={formData.titulo}
+                  name="nombreCurso"
+                  value={formData.nombreCurso}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Título del curso"
+                  placeholder="Maquillaje Profesional"
                   required
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
-                <select
-                  name="categoria"
-                  value={formData.categoria}
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo de curso *
+                </label>
+                <input
+                  list="tipos"
+                  name="tipoCurso"
+                  value={formData.tipoCurso}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Técnico / Curso corto / …"
                   required
-                >
-                  {categorias.filter(cat => cat.id !== 'todos').map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.nombre}
-                    </option>
+                />
+                <datalist id="tipos">
+                  {tiposSugeridos.map((t) => (
+                    <option key={t} value={t} />
                   ))}
-                </select>
+                </datalist>
               </div>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
-              <textarea
-                name="descripcion"
-                value={formData.descripcion}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Descripción detallada del curso"
-                rows="3"
-                required
-              ></textarea>
-            </div>
-            
-            <div className="grid md:grid-cols-3 gap-4">
+
+            <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Duración *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Duración (horas) *
+                </label>
                 <input
-                  type="text"
+                  type="number"
                   name="duracion"
                   value={formData.duracion}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Ej: 6 semanas"
+                  placeholder="40"
+                  min="1"
                   required
                 />
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nivel *</label>
-                <select
-                  name="nivel"
-                  value={formData.nivel}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  {niveles.map(nivel => (
-                    <option key={nivel} value={nivel}>
-                      {nivel}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Precio *</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500">$</span>
-                  </div>
-                  <input
-                    type="number"
-                    name="precio"
-                    value={formData.precio}
-                    onChange={handleChange}
-                    className="w-full pl-8 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="99.99"
-                    step="0.01"
-                    min="0"
-                    required
-                  />
-                </div>
-              </div>
+
+              <div className="md:col-span-1"></div>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">URL de Imagen</label>
-              <input
-                type="text"
-                name="imagen"
-                value={formData.imagen}
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Temario / Contenido *
+              </label>
+              <textarea
+                name="temario"
+                value={formData.temario}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="https://ejemplo.com/imagen.jpg"
+                placeholder="Técnicas de maquillaje social, fotografía, cuidado de la piel…"
+                rows="3"
+                required
               />
             </div>
-            
-            <div className="flex space-x-3">
+
+            <div className="flex gap-3">
               <Button type="submit" variant="primary">
-                {editMode ? 'Actualizar Curso' : 'Crear Curso'}
+                {editMode ? "Actualizar curso" : "Crear curso"}
               </Button>
-              
               {editMode && (
                 <Button type="button" variant="outline" onClick={resetForm}>
-                  Cancelar Edición
+                  Cancelar edición
                 </Button>
               )}
             </div>
           </form>
         </Card>
 
-        {/* Filtros */}
+        {/* ---------- Filtros ---------- */}
         <Card className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-            Gestionar Cursos Existentes
+            Gestionar cursos existentes
           </h2>
-          
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Buscar cursos
+                Buscar
               </label>
               <input
                 type="text"
-                placeholder="Buscar por título o descripción..."
+                placeholder="Buscar por nombre, temario o tipo…"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -319,16 +296,16 @@ function AdminCursosPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Filtrar por categoría
+                Filtrar por tipo de curso
               </label>
               <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                value={tipoFiltro}
+                onChange={(e) => setTipoFiltro(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                {categorias.map(cat => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.nombre}
+                {uniqueTipos.map((t) => (
+                  <option key={t} value={t}>
+                    {t === "todos" ? "Todos" : t}
                   </option>
                 ))}
               </select>
@@ -336,84 +313,73 @@ function AdminCursosPage() {
           </div>
         </Card>
 
-        {/* Lista de cursos */}
-        <div className="space-y-4">
-          {filteredCursos.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">
-                No se encontraron cursos que coincidan con tu búsqueda.
-              </p>
-            </div>
-          ) : (
-            filteredCursos.map(curso => (
-              <Card key={curso.id} className="hover:shadow-lg transition-shadow">
-                <div className="flex flex-col md:flex-row">
-                  <div className="md:w-1/4 mb-4 md:mb-0 md:mr-6">
-                    <img 
-                      src={curso.imagen} 
-                      alt={curso.titulo}
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  </div>
-                  
-                  <div className="md:w-3/4">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                      {curso.titulo}
-                    </h3>
-                    
-                    <p className="text-gray-600 mb-4">
-                      {curso.descripcion}
+        {/* ---------- Lista ---------- */}
+        {loading ? (
+          <div className="text-center text-gray-500">Cargando cursos…</div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">
+              No se encontraron cursos que coincidan con tu búsqueda.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filtered.map((c) => (
+              <Card key={c.id} className="hover:shadow-lg transition-shadow">
+                <div className="flex flex-col md:flex-row md:items-start gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-xl font-semibold text-gray-800">
+                        {c.nombreCurso}
+                      </h3>
+                      {c.tipoCurso && (
+                        <span className="bg-teal-100 text-teal-800 px-2 py-1 rounded text-sm">
+                          {c.tipoCurso}
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-gray-600 mb-2">
+                      <span className="font-medium">Duración:</span>{" "}
+                      {c.duracion} hora{Number(c.duracion) === 1 ? "" : "s"}
                     </p>
-                    
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                        {curso.nivel}
-                      </span>
-                      <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">
-                        {curso.duracion}
-                      </span>
-                      <span className="bg-teal-100 text-teal-800 px-2 py-1 rounded text-sm">
-                        {categorias.find(cat => cat.id === curso.categoria)?.nombre || curso.categoria}
-                      </span>
-                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
-                        ${curso.precio}
-                      </span>
+
+                    {c.temario && (
+                      <p className="text-gray-600 mb-3">
+                        <span className="font-medium">Temario:</span> {c.temario}
+                      </p>
+                    )}
+
+                    <div className="text-gray-400 text-sm">
+                      <span className="mr-4">Creado: {fmtDate(c.createdAt)}</span>
+                      <span>Actualizado: {fmtDate(c.updatedAt)}</span>
                     </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      <Button 
-                        variant="primary" 
-                        size="sm" 
-                        onClick={() => handleEdit(curso.id)}
-                      >
-                        Editar
-                      </Button>
-                      
-                      <Button 
-                        variant="danger" 
-                        size="sm" 
-                        onClick={() => handleDelete(curso.id)}
-                      >
-                        Eliminar
-                      </Button>
-                      
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        onClick={() => handleDuplicate(curso.id)}
-                      >
-                        Duplicar
-                      </Button>
-                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleEdit(c.id)}
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => handleDelete(c.id)}
+                    >
+                      Eliminar
+                    </Button>
                   </div>
                 </div>
               </Card>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
-  )
+  );
 }
 
-export default AdminCursosPage
+export default AdminCursosPage;

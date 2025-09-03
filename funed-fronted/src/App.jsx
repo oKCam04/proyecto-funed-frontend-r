@@ -27,7 +27,7 @@ function App() {
             <Route path="/registro" element={<RegistroPage />} />
             <Route path="/verificar-email" element={<EmailVerificationPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/cursos" element={<AdminCursos />} />
+            <Route path="/admin/cursos" element={<AdminCursos />} /> {/*crud completo de cursos*/}
             <Route path="/admin/cursos/nuevo" element={<AdminCursoForm />} />
             <Route path="/admin/cursos/editar/:id" element={<AdminCursoForm />} />
             <Route path="/sobre-nosotros" element={<SobreNosotrosPage />} />
