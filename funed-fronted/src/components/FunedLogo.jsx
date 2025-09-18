@@ -12,7 +12,7 @@ function FunedLogo({
   const [imageLoaded, setImageLoaded] = useState(false)
   
   // Ruta al archivo PNG del logo desde la carpeta public
-  const logoSrc = '../../public/logo.png'
+  const logoSrc = '/logo.png'
   
   const sizeClasses = {
     sm: 'h-8 w-auto',

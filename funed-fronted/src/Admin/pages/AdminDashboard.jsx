@@ -178,10 +178,16 @@ function AdminDashboard() {
             <h2 className="text-xl font-semibold text-gray-900">
               Gestión Rápida de Cursos
             </h2>
-            <Link to="/admin/cursos/nuevo">
+            <Link to="/admin/cursos">
               <Button variant="primary">
                 + Crear Nuevo Curso
               </Button>
+            </Link>
+            <Link to="/admin/docentes"  >
+                <Button>+ Agregar Nuevo Docente</Button>
+            </Link>
+            <Link to="/admin/oferta-cursos">
+                <Button>+ Agregar Nueva Oferta </Button>
             </Link>
           </div>
 

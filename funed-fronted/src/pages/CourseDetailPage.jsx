@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState, useMemo } from 'react'
 import Button from '../components/Button'
-// import { api } from '../lib/api'
+import ofertaCursoService from '../api/services/ofertaCursoService'
 
 function CourseDetailPage() {
   const { id } = useParams()
@@ -9,16 +9,18 @@ function CourseDetailPage() {
   const [showLoginModal, setShowLoginModal] = useState(false)
 
   const [oferta, setOferta] = useState(null)
-  const [curso, setCurso] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   const ofertaId = Number(id)
 
-  // Helper para moneda COP
   const formatCOP = (v) =>
     typeof v === 'number'
-      ? v.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
+      ? v.toLocaleString('es-CO', {
+          style: 'currency',
+          currency: 'COP',
+          maximumFractionDigits: 0,
+        })
       : 'Consultar'
 
   useEffect(() => {
@@ -28,67 +30,58 @@ function CourseDetailPage() {
 
     async function load() {
       try {
-        const { data: ofertaData } = await api.get(`/ofertaCursos/${ofertaId}`)
+        const ofertaData = await ofertaCursoService.getById(ofertaId)
         if (!mounted) return
         setOferta(ofertaData)
-
-        if (ofertaData?.idcurso) {
-          try {
-            const { data: cursoData } = await api.get(`/cursos/${ofertaData.idcurso}`)
-            if (mounted) setCurso(cursoData)
-          } catch {}
-        }
-      } catch (e) {
-        try {
-          const { data: list } = await api.get('/ofertaCursos')
-          const found = Array.isArray(list) ? list.find((o) => o.id === ofertaId) : null
-          if (mounted) setOferta(found || null)
-          if (!found) throw new Error('Oferta no encontrada')
-        } catch (err2) {
-          if (mounted) setError(err2?.response?.data?.message || err2.message)
-        }
+      } catch (err) {
+        if (mounted) setError(err?.response?.data?.message || err.message)
       } finally {
         mounted && setLoading(false)
       }
     }
 
     load()
-    return () => { mounted = false }
+    return () => {
+      mounted = false
+    }
   }, [ofertaId])
 
-  const titulo = useMemo(
-    () => curso?.nombreCurso || oferta?.curso?.nombreCurso || 'Curso',
-    [curso, oferta]
-  )
+  const titulo = oferta?.curso?.nombreCurso || 'Curso'
 
-  // 👉 Precio: ahora viene en la OFERTA
   const precio = useMemo(() => {
     if (typeof oferta?.precio === 'number') return formatCOP(oferta.precio)
-    if (typeof curso?.precio === 'number') return formatCOP(curso.precio)
+    if (typeof oferta?.curso?.precio === 'number')
+      return formatCOP(oferta.curso.precio)
     return 'Consultar'
-  }, [oferta, curso])
+  }, [oferta])
 
-  const nivel = curso?.nivel || curso?.tipoCurso || '—'
-  const duracion = curso?.duracion ? `${curso.duracion} horas` : '—'
-  const modalidad = curso?.modalidad || 'Presencial'
+  const nivel = oferta?.curso?.nivel || oferta?.curso?.tipoCurso || '—'
+  const duracion = oferta?.curso?.duracion
+    ? `${oferta.curso.duracion} horas`
+    : '—'
+  const modalidad = oferta?.curso?.modalidad || 'Presencial'
   const horarios = oferta?.horario ? [oferta.horario] : []
-  const certificacion = curso?.certificacion || `Certificado ${titulo} FUNED`
+  const certificacion =
+    oferta?.curso?.certificacion || `Certificado ${titulo} FUNED`
 
   const temarioLista = useMemo(() => {
-    if (Array.isArray(curso?.temario)) return curso.temario
-    if (typeof curso?.temario === 'string') {
-      return curso.temario.split(',').map((t) => t.trim()).filter(Boolean)
+    if (Array.isArray(oferta?.curso?.temario)) return oferta.curso.temario
+    if (typeof oferta?.curso?.temario === 'string') {
+      return oferta.curso.temario
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean)
     }
     return []
-  }, [curso])
+  }, [oferta])
 
   const instructor =
-    oferta?.docente?.nombre ||
-    oferta?.docente?.especialidad ||
+    oferta?.docentes?.persona?.nombre ||
     (oferta?.idDocente ? `Docente #${oferta.idDocente}` : 'Por confirmar')
 
   const descripcionCompleta =
-    curso?.descripcionCompleta || 'Información del curso próximamente disponible.'
+    oferta?.curso?.descripcionCompleta ||
+    'Información del curso próximamente disponible.'
 
   const handleInscribirse = () => {
     const token = localStorage.getItem('token')
@@ -111,7 +104,9 @@ function CourseDetailPage() {
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
             {error ? 'Error' : 'Curso no encontrado'}
           </h1>
-          <p className="text-gray-600 mb-6">{error || 'No existe la oferta solicitada.'}</p>
+          <p className="text-gray-600 mb-6">
+            {error || 'No existe la oferta solicitada.'}
+          </p>
           <Button onClick={() => navigate('/cursos')} variant="primary">
             Volver a cursos
           </Button>
@@ -147,14 +142,19 @@ function CourseDetailPage() {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <img
-                src={`https://via.placeholder.com/1200x600/1e40af/FFFFFF?text=${encodeURIComponent(titulo)}`}
+                src={
+                  oferta?.foto ||
+                  `https://via.placeholder.com/1200x600/1e40af/FFFFFF?text=${encodeURIComponent(
+                    titulo
+                  )}`
+                }
                 alt={titulo}
                 className="w-full h-64 object-cover"
               />
               <div className="p-6">
                 <div className="flex items-center gap-4 mb-4">
                   <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                    {curso?.categoria || 'formación'}
+                    {oferta?.curso?.categoria || 'formación'}
                   </span>
                   <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
                     {modalidad}
@@ -179,7 +179,9 @@ function CourseDetailPage() {
                 {/* Temario */}
                 {temarioLista.length > 0 && (
                   <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Temario del Curso</h3>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                      Temario del Curso
+                    </h3>
                     <ul className="space-y-2">
                       {temarioLista.map((tema, index) => (
                         <li key={index} className="flex items-start">

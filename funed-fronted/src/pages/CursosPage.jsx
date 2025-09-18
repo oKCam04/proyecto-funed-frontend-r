@@ -1,26 +1,28 @@
 import { useEffect, useState } from 'react'
-// import { api } from '../lib/api'
+import ofertaCursoService from '../api/services/ofertaCursoService'
 import Card from '../components/Card'
+import { useNavigate } from 'react-router-dom'
 
 function CursosPage() {
   const [ofertas, setOfertas] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const navigate = useNavigate()
 
-  // useEffect(() => {
-  //   api
-  //     .get('/ofertaCursos')
-  //     .then(({ data }) => {
-  //       setOfertas(Array.isArray(data) ? data : [])
-  //     })
-  //     .catch((e) => {
-  //       setError(e?.response?.data?.message || e.message)
-  //     })
-  //     .finally(() => {
-  //       setLoading(false)
-  //     })
-  // }, [])
+  useEffect(() => {
+    ofertaCursoService
+      .list()
+      .then((data) => {
+        setOfertas(Array.isArray(data) ? data : [])
+      })
+      .catch((e) => {
+        setError(e?.response?.data?.message || e.message)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [])
 
   const filtered = ofertas.filter((o) =>
     (o?.curso?.nombreCurso || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -55,9 +57,12 @@ function CursosPage() {
           {filtered.map((o) => (
             <Card key={o.id} className="hover:shadow-lg transition-shadow">
               <img
-                src={`https://via.placeholder.com/600x360/1e40af/FFFFFF?text=${encodeURIComponent(
-                  o.curso?.nombreCurso || 'Curso'
-                )}`}
+                src={
+                  o.foto ||
+                  `https://via.placeholder.com/600x360/1e40af/FFFFFF?text=${encodeURIComponent(
+                    o.curso?.nombreCurso || 'Curso'
+                  )}`
+                }
                 alt={o.curso?.nombreCurso || 'Curso'}
                 className="w-full h-48 object-cover rounded-lg mb-4"
               />
@@ -94,24 +99,26 @@ function CursosPage() {
                 <div className="flex justify-between">
                   <span className="opacity-70">Docente</span>
                   <span>
-                    {o.docente?.especialidad ? o.docente.especialidad : `#${o.idDocente}`}
+                    {o.docentes?.persona?.nombre
+                      ? o.docentes.persona.nombre
+                      : `#${o.idDocente}`}
                   </span>
                 </div>
               </div>
 
               <div className="flex justify-between items-center">
                 <button
-                  onClick={() => (window.location.href = `/curso/${o.id}`)}
+                  onClick={() => navigate(`/curso/${o.id}`)}
                   className="bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm"
                 >
                   Ver Detalles
                 </button>
-                <button
+                {/* <button
                   className="bg-blue-800 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
                   onClick={() => alert(`Inscribirme a oferta ${o.id}`)}
                 >
                   Inscribirse
-                </button>
+                </button> */}
               </div>
             </Card>
           ))}

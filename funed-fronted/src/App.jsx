@@ -12,6 +12,8 @@ import AdminCursos from './pages/AdminCursos'
 import AdminCursoForm from './pages/AdminCursoForm'
 import SobreNosotrosPage from './pages/SobreNosotrosPage'
 import ContactoPage from './pages/ContactoPage'
+import AdminDocente from './pages/AdminDocentes'
+import AdminOfertaCursos from './pages/AdminOfertaCurso'
 
 function App() {
   return (
@@ -28,6 +30,8 @@ function App() {
             <Route path="/verificar-email" element={<EmailVerificationPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/cursos" element={<AdminCursos />} /> {/*crud completo de cursos*/}
+            <Route path='/admin/docentes' element={<AdminDocente/>}  /> {/* crud completo docentes*/}
+            <Route path='/admin/oferta-cursos' element={<AdminOfertaCursos/>} /> {/* crud completo oferta*/}
             <Route path="/admin/cursos/nuevo" element={<AdminCursoForm />} />
             <Route path="/admin/cursos/editar/:id" element={<AdminCursoForm />} />
             <Route path="/sobre-nosotros" element={<SobreNosotrosPage />} />
