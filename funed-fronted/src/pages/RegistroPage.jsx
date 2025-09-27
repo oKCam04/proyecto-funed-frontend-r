@@ -9,8 +9,8 @@ function RegistroPage() {
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
-    tipoIdentificacion: '',
-    numeroIdentificacion: '',
+    tipo_identificacion: '',
+    numero_identificacion: '',
     fechaNacimiento: '',
     email: '',
     telefono: ''
@@ -29,8 +29,8 @@ function RegistroPage() {
 
     if (!formData.nombre.trim()) newErrors.nombre = 'El nombre es requerido'
     if (!formData.apellido.trim()) newErrors.apellido = 'El apellido es requerido'
-    if (!formData.tipoIdentificacion) newErrors.tipoIdentificacion = 'El tipo de identificación es requerido'
-    if (!formData.numeroIdentificacion.trim()) newErrors.numeroIdentificacion = 'El número de identificación es requerido'
+    if (!formData.tipo_identificacion) newErrors.tipo_identificacion = 'El tipo de identificación es requerido'
+    if (!formData.numero_identificacion.trim()) newErrors.numero_identificacion = 'El número de identificación es requerido'
 
     if (!formData.fechaNacimiento) {
       newErrors.fechaNacimiento = 'La fecha de nacimiento es requerida'
@@ -65,30 +65,31 @@ function RegistroPage() {
 
     try {
       // 1) Crear PERSONA
+    console.log("Datos capturados en formData:", formData)
       const personaPayload = {
         nombre: formData.nombre,
         apellido: formData.apellido,
-        tipoIdentificacion: formData.tipoIdentificacion,
-        numeroIdentificacion: formData.numeroIdentificacion,
-        fechaNacimiento: formData.fechaNacimiento,
+        tipo_identificacion: formData.tipo_identificacion,
+        numero_identificacion: formData.numero_identificacion,
+        fecha_nacimiento: formData.fechaNacimiento,
         correo: formData.email,
         telefono: formData.telefono,
       }
 
       const personaRes = await personasService.create(personaPayload)
-      const idPersona = getIdPersonaFrom(personaRes)
-      if (!idPersona) throw new Error('No se recibió idPersona del backend')
+      const id_persona = getIdPersonaFrom(personaRes)
+      if (!id_persona) throw new Error('No se recibió idPersona del backend')
 
       // 2) Registrar USUARIO (regla: contraseña = cédula)
       const registerPayload = {
-        idPersona,
+        id_persona,
         email: formData.email,
-        password: formData.numeroIdentificacion,
+        password: formData.numero_identificacion,
       }
 
       await authService.register(registerPayload)
 
-      // 3) Redirigir a login (o podrías loguear automáticamente)
+      // 3) Redirigir a login
       navigate('/login')
     } catch (err) {
       console.error(err)
@@ -157,32 +158,33 @@ function RegistroPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="tipoIdentificacion" className="block text-sm font-medium text-gray-700">Tipo de Identificación</label>
+                <label htmlFor="tipo_identificacion" className="block text-sm font-medium text-gray-700">Tipo de Identificación</label>
                 <select
-                  id="tipoIdentificacion"
-                  name="tipoIdentificacion"
-                  value={formData.tipoIdentificacion}
+                  id="tipo_identificacion"
+                  name="tipo_identificacion"
+                  value={formData.tipo_identificacion}
                   onChange={handleChange}
-                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.tipoIdentificacion ? 'border-red-300' : 'border-gray-300'}`}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.tipo_identificacion ? 'border-red-300' : 'border-gray-300'}`}
                 >
                   <option value="">Seleccionar tipo</option>
-                  <option value="Cédula">Cédula Nacional</option>
-                  <option value="Tarjeta de identidad">Tarjeta identificación</option>
+                  <option value="CC">Cédula Nacional</option>
+                  <option value="TI">Tarjeta identificación</option>
+                  <option value="CE">Cédula Extranjería</option>
                 </select>
-                {errors.tipoIdentificacion && <p className="mt-1 text-sm text-red-600">{errors.tipoIdentificacion}</p>}
+                {errors.tipo_identificacion && <p className="mt-1 text-sm text-red-600">{errors.tipo_identificacion}</p>}
               </div>
 
               <div>
-                <label htmlFor="numeroIdentificacion" className="block text-sm font-medium text-gray-700">Número de Identificación</label>
+                <label htmlFor="numero_identificacion" className="block text-sm font-medium text-gray-700">Número de Identificación</label>
                 <input
-                  id="numeroIdentificacion"
-                  name="numeroIdentificacion"
+                  id="numero_identificacion"
+                  name="numero_identificacion"
                   type="text"
-                  value={formData.numeroIdentificacion}
+                  value={formData.numero_identificacion}
                   onChange={handleChange}
-                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.numeroIdentificacion ? 'border-red-300' : 'border-gray-300'}`}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.numero_identificacion ? 'border-red-300' : 'border-gray-300'}`}
                 />
-                {errors.numeroIdentificacion && <p className="mt-1 text-sm text-red-600">{errors.numeroIdentificacion}</p>}
+                {errors.numero_identificacion && <p className="mt-1 text-sm text-red-600">{errors.numero_identificacion}</p>}
               </div>
             </div>
 

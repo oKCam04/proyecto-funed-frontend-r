@@ -14,6 +14,7 @@ import SobreNosotrosPage from './pages/SobreNosotrosPage'
 import ContactoPage from './pages/ContactoPage'
 import AdminDocente from './pages/AdminDocentes'
 import AdminOfertaCursos from './pages/AdminOfertaCurso'
+import EstudiantePage from './pages/EstudiantePage'
 
 function App() {
   return (
@@ -36,6 +37,9 @@ function App() {
             <Route path="/admin/cursos/editar/:id" element={<AdminCursoForm />} />
             <Route path="/sobre-nosotros" element={<SobreNosotrosPage />} />
             <Route path="/contacto" element={<ContactoPage />} />
+
+            {/*Estudiante*/}
+            <Route path='/Estudiante' element={<EstudiantePage/>}  />
             {/* routee*/}
           </Routes>
         </main>

@@ -6,9 +6,9 @@ const authService = {
     return data; // { token, user: { persona } }
   },
 
-  register: async ({ idPersona, email, password }) => {
+  register: async ({ id_persona, email, password }) => {
     const { data } = await axiosClient.post('/auth/register', {
-      idPersona,
+      id_persona,
       email,
       password,
     });

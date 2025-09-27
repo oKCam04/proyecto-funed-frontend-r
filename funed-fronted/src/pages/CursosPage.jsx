@@ -60,31 +60,31 @@ function CursosPage() {
                 src={
                   o.foto ||
                   `https://via.placeholder.com/600x360/1e40af/FFFFFF?text=${encodeURIComponent(
-                    o.curso?.nombreCurso || 'Curso'
+                    o.curso?.nombre_curso || 'Curso'
                   )}`
                 }
-                alt={o.curso?.nombreCurso || 'Curso'}
+                alt={o.curso?.nombre_curso || 'Curso'}
                 className="w-full h-48 object-cover rounded-lg mb-4"
               />
               <h3 className="text-xl font-semibold text-gray-800 mb-1">
                 {o.curso?.nombreCurso ?? 'Curso'}
               </h3>
-              <p className="text-gray-500 mb-4">Código: {o.codigoCurso ?? '-'}</p>
+              <p className="text-gray-500 mb-4">Código: {o.codigo_curso ?? '-'}</p>
 
               <div className="text-sm space-y-1 mb-4">
                 <div className="flex justify-between">
                   <span className="opacity-70">Inicio</span>
                   <span>
-                    {o.fechaInicioCurso
-                      ? new Date(o.fechaInicioCurso).toLocaleDateString()
+                    {o.fecha_inicio_curso
+                      ? new Date(o.fecha_inicio_curso).toLocaleDateString()
                       : '-'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="opacity-70">Fin</span>
                   <span>
-                    {o.fechaFinCurso
-                      ? new Date(o.fechaFinCurso).toLocaleDateString()
+                    {o.fecha_fin_curso
+                      ? new Date(o.fecha_fin_curso).toLocaleDateString()
                       : '-'}
                   </span>
                 </div>
@@ -96,14 +96,14 @@ function CursosPage() {
                   <span className="opacity-70">Cupos</span>
                   <span>{o.cupos ?? '-'}</span>
                 </div>
-                <div className="flex justify-between">
+                {/* <div className="flex justify-between">
                   <span className="opacity-70">Docente</span>
                   <span>
                     {o.docentes?.persona?.nombre
                       ? o.docentes.persona.nombre
                       : `#${o.idDocente}`}
                   </span>
-                </div>
+                </div> */}
               </div>
 
               <div className="flex justify-between items-center">

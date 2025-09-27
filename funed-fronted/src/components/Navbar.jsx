@@ -5,7 +5,8 @@ function Navbar() {
   const navigate = useNavigate();
   const { persona, logout, hasRole } = useAuth();
 
-  const esAdmin = hasRole(["admin", "administrador", "administrator"]);
+  const esAdmin = hasRole(["admin"]);
+  const esEstudiante = hasRole(["Estudiante"]);
 
   const handleLogout = () => {
     logout();        // limpia estado + localStorage + header
@@ -35,7 +36,8 @@ function Navbar() {
           <Link to="/contacto" className="hover:text-blue-200">Contacto</Link>
 
           {esAdmin && <Link to="/admin" className="hover:text-blue-200">Admin</Link>}
-
+          {esEstudiante && <Link to="/estudiante" className="hover:text-blue-200">Mis Cursos</Link>}
+            
           <div className="border-l border-blue-600 pl-4 ml-4 flex items-center gap-3">
             {!persona ? (
               <>

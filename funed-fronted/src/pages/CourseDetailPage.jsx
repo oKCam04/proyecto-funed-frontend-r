@@ -46,20 +46,19 @@ function CourseDetailPage() {
     }
   }, [ofertaId])
 
-  const titulo = oferta?.curso?.nombreCurso || 'Curso'
+  // Datos principales
+  const titulo = oferta?.curso?.nombre_curso || 'Curso'
 
   const precio = useMemo(() => {
     if (typeof oferta?.precio === 'number') return formatCOP(oferta.precio)
-    if (typeof oferta?.curso?.precio === 'number')
-      return formatCOP(oferta.curso.precio)
     return 'Consultar'
   }, [oferta])
 
-  const nivel = oferta?.curso?.nivel || oferta?.curso?.tipoCurso || '—'
+  const nivel = oferta?.curso?.tipo_curso || '—'
   const duracion = oferta?.curso?.duracion
     ? `${oferta.curso.duracion} horas`
     : '—'
-  const modalidad = oferta?.curso?.modalidad || 'Presencial'
+  const modalidad = oferta?.modalidad || 'Presencial'
   const horarios = oferta?.horario ? [oferta.horario] : []
   const certificacion =
     oferta?.curso?.certificacion || `Certificado ${titulo} FUNED`
@@ -77,10 +76,10 @@ function CourseDetailPage() {
 
   const instructor =
     oferta?.docentes?.persona?.nombre ||
-    (oferta?.idDocente ? `Docente #${oferta.idDocente}` : 'Por confirmar')
+    (oferta?.id_docente ? `Docente #${oferta.id_docente}` : 'Por confirmar')
 
   const descripcionCompleta =
-    oferta?.curso?.descripcionCompleta ||
+    oferta?.curso?.descripcion_completa ||
     'Información del curso próximamente disponible.'
 
   const handleInscribirse = () => {
@@ -171,10 +170,10 @@ function CourseDetailPage() {
                 </p>
 
                 {/* Instructor */}
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                {/* <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                   <h3 className="font-semibold text-gray-900 mb-2">Instructor</h3>
                   <p className="text-gray-700">{instructor}</p>
-                </div>
+                </div> */}
 
                 {/* Temario */}
                 {temarioLista.length > 0 && (
@@ -222,16 +221,16 @@ function CourseDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Inicio:</span>
                   <span className="font-medium">
-                    {oferta?.fechaInicioCurso
-                      ? new Date(oferta.fechaInicioCurso).toLocaleDateString()
+                    {oferta?.fecha_inicio_curso
+                      ? new Date(oferta.fecha_inicio_curso).toLocaleDateString()
                       : '—'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Fin:</span>
                   <span className="font-medium">
-                    {oferta?.fechaFinCurso
-                      ? new Date(oferta.fechaFinCurso).toLocaleDateString()
+                    {oferta?.fecha_fin_curso
+                      ? new Date(oferta.fecha_fin_curso).toLocaleDateString()
                       : '—'}
                   </span>
                 </div>
@@ -241,7 +240,7 @@ function CourseDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Código:</span>
-                  <span className="font-medium">{oferta?.codigoCurso ?? '—'}</span>
+                  <span className="font-medium">{oferta?.codigo_curso ?? '—'}</span>
                 </div>
               </div>
 
