@@ -15,6 +15,7 @@ import ContactoPage from './pages/ContactoPage'
 import AdminDocente from './pages/AdminDocentes'
 import AdminOfertaCursos from './pages/AdminOfertaCurso'
 import EstudiantePage from './pages/EstudiantePage'
+import EstudianteCursoDetallePage from './pages/EstudianteCursoDetalle'
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
 
             {/*Estudiante*/}
             <Route path='/Estudiante' element={<EstudiantePage/>}  />
+            <Route path='/Estudiante/curso/:id' element={<EstudianteCursoDetallePage/>}  />
             {/* routee*/}
           </Routes>
         </main>

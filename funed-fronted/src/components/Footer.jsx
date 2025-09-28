@@ -12,7 +12,6 @@ function Footer() {
               <div className="flex-shrink-0">
                 <FunedLogo 
                   size="xl" 
-                  invert={true}
                   className="opacity-90"
                 />
               </div>

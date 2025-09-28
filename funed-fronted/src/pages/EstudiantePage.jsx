@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import cursoPersonaService from "../api/services/cursoPersonaService";
+import { useNavigate } from "react-router-dom";
 
 export default function EstudiantePage() {
   const { usuario } = useAuth(); // usamos usuario del contexto (idPersona está aquí)
   const [cursos, setCursos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
 useEffect(() => {
   const fetchCursos = async () => {
@@ -59,7 +61,7 @@ useEffect(() => {
       {/* Cursos */}
       <div className="grid md:grid-cols-2 gap-6">
         {cursos.map((curso) => (
-          <CursoCard key={curso.idMatricula} curso={curso} />
+          <CursoCard key={curso.idMatricula} curso={curso} navigate={navigate} />
         ))}
       </div>
     </div>
@@ -82,7 +84,7 @@ function StatCard({ title, value, color }) {
   );
 }
 
-function CursoCard({ curso }) {
+function CursoCard({ curso, navigate }) {
   const progreso =
     curso.resultado === "Aprobado"
       ? 100
@@ -123,7 +125,7 @@ function CursoCard({ curso }) {
         {curso.duracion} horas · {curso.horario}
       </p>
 
-      <button className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+      <button className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition" onClick={() => navigate(`/Estudiante/curso/${curso.idMatricula}`)}>
         {curso.resultado === "Aprobado" ? "Revisar" : "Continuar"}
       </button>
     </div>
