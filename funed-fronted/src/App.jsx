@@ -14,8 +14,10 @@ import SobreNosotrosPage from './pages/SobreNosotrosPage'
 import ContactoPage from './pages/ContactoPage'
 import AdminDocente from './pages/AdminDocentes'
 import AdminOfertaCursos from './pages/AdminOfertaCurso'
+import AdminPagos from './Admin/pages/AdminPagos';
 import EstudiantePage from './pages/EstudiantePage'
 import EstudianteCursoDetallePage from './pages/EstudianteCursoDetalle'
+import ProcesoPagoPage from './pages/ProcesoPagoPage';
 
 function App() {
   return (
@@ -34,10 +36,12 @@ function App() {
             <Route path="/admin/cursos" element={<AdminCursos />} /> {/*crud completo de cursos*/}
             <Route path='/admin/docentes' element={<AdminDocente/>}  /> {/* crud completo docentes*/}
             <Route path='/admin/oferta-cursos' element={<AdminOfertaCursos/>} /> {/* crud completo oferta*/}
+            <Route path="/admin/pagos" element={<AdminPagos />} />
             <Route path="/admin/cursos/nuevo" element={<AdminCursoForm />} />
             <Route path="/admin/cursos/editar/:id" element={<AdminCursoForm />} />
             <Route path="/sobre-nosotros" element={<SobreNosotrosPage />} />
             <Route path="/contacto" element={<ContactoPage />} />
+            <Route path="/pago/curso/:id" element={<ProcesoPagoPage />} />
 
             {/*Estudiante*/}
             <Route path='/Estudiante' element={<EstudiantePage/>}  />

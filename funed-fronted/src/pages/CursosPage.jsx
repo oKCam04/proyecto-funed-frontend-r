@@ -10,6 +10,15 @@ function CursosPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const navigate = useNavigate()
 
+  const formatCOP = (v) =>
+    typeof v === 'number'
+      ? v.toLocaleString('es-CO', {
+          style: 'currency',
+          currency: 'COP',
+          maximumFractionDigits: 0,
+        })
+      : 'Consultar'
+
   useEffect(() => {
     ofertaCursoService
       .list()
@@ -104,6 +113,10 @@ function CursosPage() {
                       : `#${o.idDocente}`}
                   </span>
                 </div> */}
+              </div>
+
+              <div className="text-2xl font-bold text-green-600 mb-4 text-right">
+                {o.precio ? formatCOP(parseFloat(o.precio)) : ''}
               </div>
 
               <div className="flex justify-between items-center">

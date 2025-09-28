@@ -50,8 +50,10 @@ function CourseDetailPage() {
   const titulo = oferta?.curso?.nombre_curso || 'Curso'
 
   const precio = useMemo(() => {
-    if (typeof oferta?.precio === 'number') return formatCOP(oferta.precio)
-    return 'Consultar'
+    if (!oferta?.precio) return 'Consultar'
+    const numericPrice = parseFloat(oferta.precio)
+    if (isNaN(numericPrice)) return 'Consultar'
+    return formatCOP(numericPrice)
   }, [oferta])
 
   const nivel = oferta?.curso?.tipo_curso || '—'
@@ -85,7 +87,7 @@ function CourseDetailPage() {
   const handleInscribirse = () => {
     const token = localStorage.getItem('token')
     if (!token) return setShowLoginModal(true)
-    alert(`(Demo) Inscripción a la oferta #${oferta?.id}`)
+    navigate(`/pago/curso/${oferta?.id}`)
   }
 
   if (loading) {
@@ -200,11 +202,6 @@ function CourseDetailPage() {
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-8">
-              <div className="text-center mb-6">
-                <div className="text-3xl font-bold text-green-600 mb-2">{precio}</div>
-                <p className="text-gray-600">Precio del curso</p>
-              </div>
-
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Duración:</span>
@@ -254,6 +251,11 @@ function CourseDetailPage() {
                   </ul>
                 </div>
               )}
+
+              <div className="text-center mb-6">
+                <div className="text-3xl font-bold text-green-600 mb-2">{precio}</div>
+                <p className="text-gray-600">Precio del curso</p>
+              </div>
 
               <div className="mb-6 p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-800">

@@ -55,11 +55,11 @@ function AdminDashboard() {
     }
   ]
 
-  const recentActivities = [
-    { id: 1, action: 'Nuevo curso creado', details: 'Maquillaje Profesional', time: 'Hace 2 horas' },
-    { id: 2, action: 'Estudiante inscrito', details: 'María González - Estética Facial', time: 'Hace 3 horas' },
-    { id: 3, action: 'Curso actualizado', details: 'Colorimetría y Tintes', time: 'Hace 5 horas' },
-    { id: 4, action: 'Nueva inscripción', details: 'Carlos Rodríguez - Corte y Peinado', time: 'Hace 1 día' }
+  const pagosRecientes = [
+    { id: 1, curso: 'Maquillaje Profesional', time: 'Hace 10 min' },
+    { id: 2, curso: 'Estética Facial', time: 'Hace 45 min' },
+    { id: 3, curso: 'Colorimetría y Tintes', time: 'Hace 2 horas' },
+    { id: 4, curso: 'Corte y Peinado', time: 'Ayer' }
   ]
 
   return (
@@ -159,12 +159,16 @@ function AdminDashboard() {
               <h2 className="text-xl font-semibold text-gray-900 mb-6">
                 Actividad Reciente
               </h2>
-              <div className="space-y-4">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} className="border-l-4 border-blue-500 pl-4">
-                    <p className="font-medium text-gray-900">{activity.action}</p>
-                    <p className="text-sm text-gray-600">{activity.details}</p>
-                    <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
+              <div className="space-y-3">
+                {pagosRecientes.map((pago) => (
+                  <div key={pago.id} className="flex items-center justify-between border border-blue-100 rounded-lg p-3">
+                    <div>
+                      <p className="font-medium text-gray-900">Pago curso {pago.curso}</p>
+                      <p className="text-xs text-gray-400 mt-1">{pago.time}</p>
+                    </div>
+                    <Link to="/admin/inscripciones">
+                      <Button>Revisar</Button>
+                    </Link>
                   </div>
                 ))}
               </div>
@@ -188,6 +192,9 @@ function AdminDashboard() {
             </Link>
             <Link to="/admin/oferta-cursos">
                 <Button>+ Agregar Nueva Oferta </Button>
+            </Link>
+            <Link to="/admin/pagos">
+                <Button variant="success">+ Gestionar Pagos</Button>
             </Link>
           </div>
 
