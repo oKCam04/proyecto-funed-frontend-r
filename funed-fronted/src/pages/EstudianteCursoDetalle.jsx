@@ -1,66 +1,184 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import moduloService from "../api/services/moduloService";
+import calificacionesService from "../api/services/calificacionesService";
+import asistenciaService from "../api/services/asistenciaService";
+import contenidoApoyoService from "../api/services/contenidoApoyoService";
+import cursoMatriculadoService from "../api/services/cursoMatriculadoService";
+import ofertaCursoService from "../api/services/ofertaCursoService";
+import { useAuth } from "../auth/AuthContext";
 
 export default function EstudianteCursoDetallePage() {
   const navigate = useNavigate();
-  // 🔹 Array dinámico de módulos
-  const [modulos] = useState([
-    { id: 1, titulo: "Introducción a React", duracion: "2h 30m", estado: "Completado", nota: 95 },
-    { id: 2, titulo: "Components y Props", duracion: "3h 15m", estado: "Completado", nota: 88 },
-    { id: 3, titulo: "State Management", duracion: "4h 00m", estado: "Completado", nota: 92 },
-    { id: 4, titulo: "React Hooks", duracion: "3h 45m", estado: "Completado", nota: 90 },
-    { id: 5, titulo: "TypeScript Fundamentals", duracion: "2h 20m", estado: "Completado", nota: 85 },
-    { id: 6, titulo: "TypeScript con React", duracion: "3h 30m", estado: "Completado", nota: 87 },
-    { id: 7, titulo: "Testing con Jest", duracion: "2h 45m", estado: "En Progreso", nota: 76 },
-    { id: 8, titulo: "Proyecto Final", duracion: "5h 00m", estado: "Pendiente", nota: null },
-  ]);
+  const { id } = useParams();
+  const { usuario } = useAuth();
+  const [searchParams] = useSearchParams();
+  const ofertaId = searchParams.get("oferta");
+  const [modulos, setModulos] = useState([]);
+  const [loadingModulos, setLoadingModulos] = useState(false);
+  const [errorModulos, setErrorModulos] = useState("");
+  const [calificaciones, setCalificaciones] = useState([]);
+  const [loadingCalificaciones, setLoadingCalificaciones] = useState(false);
+  const [errorCalificaciones, setErrorCalificaciones] = useState("");
 
-  // 🔹 Array de recursos para 'Descargas'
-  const [recursos] = useState([
-    { id: 1, nombre: "Guía de React Hooks", tipo: "PDF", tamano: "2.3 MB" },
-    { id: 2, nombre: "Plantillas de Proyecto", tipo: "ZIP", tamano: "15.7 MB" },
-    { id: 3, nombre: "Cheat Sheet TypeScript", tipo: "PDF", tamano: "1.1 MB" },
-    { id: 4, nombre: "Videos de Repaso", tipo: "Playlist", tamano: "2.5 GB" },
-  ]);
+  // Cargar módulos desde API según oferta
+  useEffect(() => {
+    if (!ofertaId) return;
+    (async () => {
+      try {
+        setLoadingModulos(true);
+        setErrorModulos("");
+        const mods = await moduloService.getByOferta(ofertaId);
+        // Mapear a estructura usada en UI
+        const mapped = (Array.isArray(mods) ? mods : []).map((m, idx) => ({
+          id: m.id ?? idx + 1,
+          titulo: m.nombre ?? `Módulo ${idx + 1}`,
+          duracion: "",
+          estado: "Pendiente",
+          nota: null,
+        }));
+        setModulos(mapped);
+      } catch (err) {
+        setErrorModulos(err?.response?.data?.mensaje || err.message || "Error cargando módulos");
+      } finally {
+        setLoadingModulos(false);
+      }
+    })();
+  }, [ofertaId]);
 
-  // 🔹 Simular descarga
-  const [downloadingId, setDownloadingId] = useState(null);
-  const tipoToExt = (tipo) => {
-    const map = { PDF: "pdf", ZIP: "zip", Playlist: "txt" };
-    return map[tipo] || "bin";
-  };
-  const handleDownload = (recurso) => {
-    setDownloadingId(recurso.id);
-    // Simula espera de red y descarga de un archivo dummy
-    setTimeout(() => {
-      const contenido = `Recurso: ${recurso.nombre}\nTipo: ${recurso.tipo}\nTamaño: ${recurso.tamano}\n\nEste es un archivo de ejemplo para simular descarga.`;
-      const blob = new Blob([contenido], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${recurso.nombre}.${tipoToExt(recurso.tipo)}`.replace(/\s+/g, "-");
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      setDownloadingId(null);
-    }, 900);
-  };
+  // Cargar calificaciones desde API según oferta
+  useEffect(() => {
+    if (!ofertaId) return;
+    (async () => {
+      try {
+        setLoadingCalificaciones(true);
+        setErrorCalificaciones("");
+        const items = await calificacionesService.getByOferta(ofertaId);
+        // Normalizar por si faltan campos
+        const mapped = (Array.isArray(items) ? items : []).map((c) => ({
+          id: c.id,
+          resultado: c.resultado || "Pendiente",
+          moduloNombre: c.modulo?.nombre || "Módulo",
+          docenteNombre: c.docente?.nombre || null,
+        }));
+        setCalificaciones(mapped);
+      } catch (err) {
+        setErrorCalificaciones(
+          err?.response?.data?.mensaje || err.message || "Error cargando calificaciones"
+        );
+      } finally {
+        setLoadingCalificaciones(false);
+      }
+    })();
+  }, [ofertaId]);
+
+  // 🔹 Recursos desde API ContenidoApoyo (por oferta)
+  const [recursos, setRecursos] = useState([]);
+  const [loadingRecursos, setLoadingRecursos] = useState(false);
+  const [errorRecursos, setErrorRecursos] = useState("");
+
+  useEffect(() => {
+    if (!ofertaId) return;
+    (async () => {
+      try {
+        setLoadingRecursos(true);
+        setErrorRecursos("");
+        const data = await contenidoApoyoService.getByOferta(ofertaId);
+        const mapped = (Array.isArray(data) ? data : []).map((r, idx) => ({
+          id: r.id ?? idx + 1,
+          titulo: r.titulo ?? `Recurso ${idx + 1}`,
+          descripcion: r.descripcion ?? "",
+          url: r.url_contenido ?? "",
+        }));
+        setRecursos(mapped);
+      } catch (err) {
+        setErrorRecursos(
+          err?.response?.data?.mensaje || err.message || "Error cargando recursos"
+        );
+      } finally {
+        setLoadingRecursos(false);
+      }
+    })();
+  }, [ofertaId]);
 
   // 🔹 Estado para Tabs
   const [activeTab, setActiveTab] = useState("modulos");
+  const [certificadoDisponible, setCertificadoDisponible] = useState(false);
+  // 🔹 Oferta para datos reales
+  const [oferta, setOferta] = useState(null);
+  const [loadingOferta, setLoadingOferta] = useState(false);
+  const [errorOferta, setErrorOferta] = useState("");
 
-  // 🔹 Array dinámico de asistencia
-  const [asistencias] = useState([
-    { id: 1, fecha: "2025-01-15", estado: "Presente" },
-    { id: 2, fecha: "2025-01-22", estado: "Presente" },
-    { id: 3, fecha: "2025-01-29", estado: "Ausente" },
-    { id: 4, fecha: "2025-02-05", estado: "Presente" },
-    { id: 5, fecha: "2025-02-12", estado: "Presente" },
-    { id: 6, fecha: "2025-02-19", estado: "Presente" },
-    { id: 7, fecha: "2025-02-26", estado: "Presente" },
-    { id: 8, fecha: "2025-03-05", estado: "Ausente" },
-  ]);
+  useEffect(() => {
+    if (!ofertaId) return;
+    (async () => {
+      try {
+        setLoadingOferta(true);
+        setErrorOferta("");
+        const data = await ofertaCursoService.getById(Number(ofertaId));
+        setOferta(data || null);
+      } catch (err) {
+        setErrorOferta(err?.response?.data?.mensaje || err.message || "Error cargando la oferta");
+      } finally {
+        setLoadingOferta(false);
+      }
+    })();
+  }, [ofertaId]);
+
+  // Verificar si la matrícula está Aprobada para mostrar Certificado
+  useEffect(() => {
+    (async () => {
+      try {
+        // Si no hay id de matrícula, no se puede verificar
+        if (!id) {
+          setCertificadoDisponible(false);
+          return;
+        }
+        const list = await cursoMatriculadoService.list();
+        const match = Array.isArray(list) ? list.find((m) => String(m.id) === String(id)) : null;
+        const aprobado = match?.resultado === "Aprobado";
+        setCertificadoDisponible(Boolean(aprobado));
+        // Si la pestaña activa es certificado y deja de estar disponible, regresar a "modulos"
+        if (!aprobado && activeTab === "certificado") {
+          setActiveTab("modulos");
+        }
+      } catch (err) {
+        // En caso de error, por seguridad ocultamos el certificado
+        setCertificadoDisponible(false);
+        if (activeTab === "certificado") setActiveTab("modulos");
+      }
+    })();
+  }, [id]);
+
+  // 🔹 Estado de asistencias desde API
+  const [asistencias, setAsistencias] = useState([]);
+  const [loadingAsistencias, setLoadingAsistencias] = useState(false);
+  const [errorAsistencias, setErrorAsistencias] = useState("");
+
+  // Cargar asistencias por persona y curso matriculado
+  useEffect(() => {
+    const idPersona = usuario?.idPersona;
+    if (!idPersona || !id) return;
+    (async () => {
+      try {
+        setLoadingAsistencias(true);
+        setErrorAsistencias("");
+        const data = await asistenciaService.getByPersonaCurso(idPersona, id);
+        const mapped = (Array.isArray(data) ? data : []).map((a, idx) => ({
+          id: a.id ?? idx + 1,
+          fecha: a.fecha ?? null,
+          estado: a.asistio === "Si" ? "Presente" : "Ausente",
+        }));
+        setAsistencias(mapped);
+      } catch (err) {
+        setErrorAsistencias(
+          err?.response?.data?.message || err.message || "Error cargando asistencias"
+        );
+      } finally {
+        setLoadingAsistencias(false);
+      }
+    })();
+  }, [usuario?.idPersona, id]);
 
   // 🔹 Helpers de calificación cualitativa
   const getEtiqueta = (nota) => {
@@ -97,6 +215,32 @@ export default function EstudianteCursoDetallePage() {
 
   const asistLabelColor = (estado) => (estado === "Presente" ? "text-green-700" : "text-red-600");
 
+  // 🔹 Métricas dinámicas
+  const asistenciaPercent = useMemo(() => {
+    const total = asistencias.length;
+    const presentes = asistencias.filter((a) => a.estado === "Presente").length;
+    return total ? Math.round((presentes / total) * 100) : 0;
+  }, [asistencias]);
+
+  const totalModulos = modulos.length;
+  const evaluadas = useMemo(
+    () => calificaciones.filter((c) => c.resultado && c.resultado !== "Pendiente"),
+    [calificaciones]
+  );
+  const aprobadasCount = useMemo(
+    () => evaluadas.filter((c) => c.resultado === "Aprobado").length,
+    [evaluadas]
+  );
+  const promedioAprobacion = useMemo(
+    () => (evaluadas.length ? Math.round((aprobadasCount / evaluadas.length) * 100) : 0),
+    [evaluadas, aprobadasCount]
+  );
+  const modulosCompletados = evaluadas.length;
+  const progresoGeneral = useMemo(
+    () => (totalModulos ? Math.round((modulosCompletados / totalModulos) * 100) : 0),
+    [modulosCompletados, totalModulos]
+  );
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <button
@@ -105,32 +249,36 @@ export default function EstudianteCursoDetallePage() {
       >
         Volver
       </button>
-      {/* Encabezado del curso */}
-      <h1 className="text-3xl font-bold">Desarrollo Web Frontend</h1>
+      {/* Encabezado del curso (dinámico) */}
+      <h1 className="text-3xl font-bold">{oferta?.curso?.nombre_curso || oferta?.curso?.nombreCurso || "Curso"}</h1>
       <p className="text-gray-600 mb-4">
-        Aprende React, TypeScript y las mejores prácticas para crear aplicaciones web modernas.
+        {oferta?.curso?.temario
+          ? (Array.isArray(oferta.curso.temario)
+              ? oferta.curso.temario.join(", ")
+              : String(oferta.curso.temario))
+          : "Contenido del curso"}
       </p>
       <div className="flex items-center gap-6 text-gray-500 mb-6">
-        <span>👨‍🏫 Dr. María González</span>
-        <span>📅 Inicio: 15 de Enero, 2024</span>
-        <span>⏳ Duración: 12 semanas</span>
+        <span>👨‍🏫 {oferta?.docente?.nombre || oferta?.docente_nombre || "Docente asignado"}</span>
+        <span>📅 Inicio: {oferta?.fecha_inicio_curso ? new Date(oferta.fecha_inicio_curso).toLocaleDateString() : "—"}</span>
+        <span>⏳ Duración: {oferta?.curso?.duracion ? `${oferta.curso.duracion} horas` : "—"}</span>
       </div>
 
       {/* Estadísticas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <StatCard title="Promedio" value="91" color="blue" />
-        <StatCard title="Asistencia" value="75%" color="green" />
-        <StatCard title="Módulos" value="6/8" color="orange" />
-        <StatCard title="Recursos" value="4" color="purple" />
+        <StatCard title="Promedio" value={String(promedioAprobacion)} color="blue" />
+        <StatCard title="Asistencia" value={`${asistenciaPercent}%`} color="green" />
+        <StatCard title="Módulos" value={`${modulosCompletados}/${totalModulos || 0}`} color="orange" />
+        <StatCard title="Recursos" value={String(recursos.length)} color="purple" />
       </div>
 
       {/* Progreso General */}
       <div className="bg-white p-4 rounded-lg shadow mb-8">
         <p className="text-gray-600 mb-2">Progreso General</p>
         <div className="w-full bg-gray-200 rounded-full h-3">
-          <div className="bg-blue-600 h-3 rounded-full" style={{ width: "75%" }}></div>
+          <div className="bg-blue-600 h-3 rounded-full" style={{ width: `${progresoGeneral}%` }}></div>
         </div>
-        <p className="text-sm text-gray-500 mt-2">6 de 8 módulos completados</p>
+        <p className="text-sm text-gray-500 mt-2">{modulosCompletados} de {totalModulos || 0} módulos completados</p>
       </div>
 
       {/* Tabs */}
@@ -167,19 +315,28 @@ export default function EstudianteCursoDetallePage() {
         >
           Recursos
         </button>
-        <button
-          className={`pb-2 -mb-px ${
-            activeTab === "certificado" ? "border-b-2 border-blue-600 font-semibold" : "text-gray-500"
-          }`}
-          onClick={() => setActiveTab("certificado")}
-        >
-          Certificado
-        </button>
+        {certificadoDisponible && (
+          <button
+            className={`pb-2 -mb-px ${
+              activeTab === "certificado" ? "border-b-2 border-blue-600 font-semibold" : "text-gray-500"
+            }`}
+            onClick={() => setActiveTab("certificado")}
+          >
+            Certificado
+          </button>
+        )}
       </div>
 
       {/* Contenido: Módulos */}
       {activeTab === "modulos" && (
         <div className="space-y-4">
+          {loadingModulos && <p className="text-gray-500">Cargando módulos...</p>}
+          {errorModulos && (
+            <p className="text-red-600">{errorModulos}</p>
+          )}
+          {!loadingModulos && !errorModulos && modulos.length === 0 && (
+            <p className="text-gray-500">No hay módulos disponibles para esta oferta.</p>
+          )}
           {modulos.map((modulo) => (
             <div
               key={modulo.id}
@@ -187,7 +344,9 @@ export default function EstudianteCursoDetallePage() {
             >
               <div>
                 <h3 className="font-medium">{modulo.titulo}</h3>
-                <p className="text-sm text-gray-500">Duración: {modulo.duracion}</p>
+                {modulo.duracion && (
+                  <p className="text-sm text-gray-500">Duración: {modulo.duracion}</p>
+                )}
               </div>
               <div className="flex items-center gap-4">
                 <span
@@ -210,27 +369,32 @@ export default function EstudianteCursoDetallePage() {
         </div>
       )}
 
-      {/* Contenido: Certificado */}
-      {activeTab === "certificado" && (
+      {/* Contenido: Certificado (dinámico) */}
+      {activeTab === "certificado" && certificadoDisponible && (
         <div className="space-y-4">
           <div className="bg-white rounded-lg shadow border p-6">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3 text-gray-700">
                 <span className="text-2xl">🎓</span>
                 <div>
-                  <h3 className="font-semibold text-lg">Solicita tu Certificado</h3>
-                  <p className="text-sm text-gray-500">Curso: Desarrollo Web Frontend</p>
+                  <h3 className="font-semibold text-lg">Certificado disponible</h3>
+                  <p className="text-sm text-gray-500">
+                    Curso: {oferta?.curso?.nombre_curso || oferta?.curso?.nombreCurso || "Curso"}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Alumno: {usuario?.nombre || "Estudiante"}
+                  </p>
                 </div>
               </div>
               <button
                 className="bg-blue-700 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
-                onClick={() => alert("Solicitud enviada para: Desarrollo Web Frontend")}
+                onClick={() => alert(`Solicitud enviada para: ${oferta?.curso?.nombre_curso || oferta?.curso?.nombreCurso || "Curso"}`)}
               >
                 Solicitar certificado
               </button>
             </div>
             <div className="mt-4 text-sm text-gray-600">
-              Tu certificado estará disponible una vez validemos los requisitos del curso. Tiempo estimado: 24-48 horas.
+              Tu certificado está habilitado porque aprobaste la matrícula. Si ya lo solicitaste, podrás descargarlo cuando esté listo.
             </div>
           </div>
         </div>
@@ -244,29 +408,39 @@ export default function EstudianteCursoDetallePage() {
               <span>📄</span>
               <h3 className="font-semibold">Recursos Adicionales</h3>
             </div>
-            <div className="space-y-3">
-              {recursos.map((r) => (
-                <div key={`rec-${r.id}`} className="flex items-center justify-between bg-white rounded-xl border p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">📘</div>
-                    <div>
-                      <p className="font-semibold">{r.nombre}</p>
-                      <p className="text-sm text-gray-500">{r.tipo} · {r.tamano}</p>
+            {loadingRecursos && <p className="text-gray-500">Cargando recursos...</p>}
+            {errorRecursos && <p className="text-red-600">{errorRecursos}</p>}
+            {!loadingRecursos && !errorRecursos && recursos.length === 0 && (
+              <p className="text-gray-500">No hay recursos disponibles para esta oferta.</p>
+            )}
+            {!loadingRecursos && !errorRecursos && recursos.length > 0 && (
+              <div className="space-y-3">
+                {recursos.map((r) => (
+                  <div key={`rec-${r.id}`} className="flex items-center justify-between bg-white rounded-xl border p-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">📘</div>
+                      <div>
+                        <p className="font-semibold">{r.titulo}</p>
+                        <p className="text-sm text-gray-500">{r.descripcion}</p>
+                      </div>
                     </div>
+                    {r.url ? (
+                      <a
+                        href={r.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 border rounded-lg px-4 py-2 hover:bg-gray-50 transition"
+                      >
+                        <span>🔗</span>
+                        Abrir
+                      </a>
+                    ) : (
+                      <span className="text-gray-400 text-sm">Sin enlace</span>
+                    )}
                   </div>
-                  <button
-                    className={`flex items-center gap-2 border rounded-lg px-4 py-2 transition ${
-                      downloadingId === r.id ? "bg-gray-100 text-gray-500" : "hover:bg-gray-50"
-                    }`}
-                    disabled={downloadingId === r.id}
-                    onClick={() => handleDownload(r)}
-                  >
-                    <span>⬇️</span>
-                    {downloadingId === r.id ? "Descargando..." : "Descargar"}
-                  </button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -279,21 +453,35 @@ export default function EstudianteCursoDetallePage() {
               <span>📊</span>
               <h3 className="font-semibold">Historial de Calificaciones</h3>
             </div>
+            {loadingCalificaciones && <p className="text-gray-500">Cargando calificaciones...</p>}
+            {errorCalificaciones && (
+              <p className="text-red-600">{errorCalificaciones}</p>
+            )}
+            {!loadingCalificaciones && !errorCalificaciones && calificaciones.length === 0 && (
+              <p className="text-gray-500">No hay calificaciones registradas para esta oferta.</p>
+            )}
             <div className="space-y-3">
-              {modulos.map((modulo, idx) => (
+              {calificaciones.map((c, idx) => (
                 <div
-                  key={`cal-${modulo.id}`}
+                  key={`cal-${c.id ?? idx}`}
                   className="flex items-center justify-between bg-white rounded-xl border p-4"
                 >
                   <div>
-                    <p className="font-semibold">Módulo {idx + 1}</p>
-                    <p className="text-sm text-gray-500">Calificación obtenida</p>
+                    <p className="font-semibold">{c.moduloNombre}</p>
+                    <p className="text-sm text-gray-500">{c.docenteNombre ? `Docente: ${c.docenteNombre}` : ""}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-bold text-blue-600">
-                      {modulo.nota !== null && modulo.nota !== undefined ? `${modulo.nota}/100` : "-"}
-                    </p>
-                    <p className={`text-sm ${getEtiquetaColor(modulo.nota)}`}>{getEtiqueta(modulo.nota)}</p>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm ${
+                        c.resultado === "Aprobado"
+                          ? "bg-green-100 text-green-600"
+                          : c.resultado === "Reprobado"
+                          ? "bg-red-100 text-red-600"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {c.resultado}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -310,20 +498,31 @@ export default function EstudianteCursoDetallePage() {
               <span>📅</span>
               <h3 className="font-semibold">Registro de Asistencia</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {asistencias.map((a) => (
-                <div
-                  key={`asis-${a.id}`}
-                  className={`rounded-xl border p-5 ${asistCardClasses(a.estado)}`}
-                >
-                  <div className="flex flex-col items-center justify-center gap-1">
-                    <div className="text-2xl opacity-80">{asistIcon(a.estado)}</div>
-                    <p className="font-semibold">{formatFecha(a.fecha)}</p>
-                    <p className={`text-sm ${asistLabelColor(a.estado)}`}>{a.estado}</p>
+            {loadingAsistencias && (
+              <p className="text-gray-500">Cargando asistencias...</p>
+            )}
+            {errorAsistencias && (
+              <p className="text-red-600">{errorAsistencias}</p>
+            )}
+            {!loadingAsistencias && !errorAsistencias && asistencias.length === 0 && (
+              <p className="text-gray-500">No hay registros de asistencia.</p>
+            )}
+            {!loadingAsistencias && !errorAsistencias && asistencias.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {asistencias.map((a) => (
+                  <div
+                    key={`asis-${a.id}`}
+                    className={`rounded-xl border p-5 ${asistCardClasses(a.estado)}`}
+                  >
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <div className="text-2xl opacity-80">{asistIcon(a.estado)}</div>
+                      <p className="font-semibold">{a.fecha ? formatFecha(a.fecha) : "—"}</p>
+                      <p className={`text-sm ${asistLabelColor(a.estado)}`}>{a.estado}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

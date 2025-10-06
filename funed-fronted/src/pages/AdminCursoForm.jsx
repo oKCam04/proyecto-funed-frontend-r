@@ -133,7 +133,7 @@ function AdminCursoForm() {
                 name="nombreCurso"
                 value={formData.nombreCurso}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${ 
                   errors.nombreCurso ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Ej: Maquillaje Profesional"
@@ -151,7 +151,7 @@ function AdminCursoForm() {
                 onChange={handleChange}
                 min="1"
                 step="1"
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${ 
                   errors.duracion ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Ej: 40"
@@ -166,7 +166,7 @@ function AdminCursoForm() {
                 name="tipoCurso"
                 value={formData.tipoCurso}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${ 
                   errors.tipoCurso ? 'border-red-300' : 'border-gray-300'
                 }`}
               >
@@ -185,7 +185,7 @@ function AdminCursoForm() {
                 value={formData.temario}
                 onChange={handleChange}
                 rows={6}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${ 
                   errors.temario ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder={'Ej:\n- Introducción\n- Técnicas básicas\n- Prácticas guiadas'}

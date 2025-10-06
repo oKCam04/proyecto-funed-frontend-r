@@ -2,15 +2,20 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState, useMemo } from 'react'
 import Button from '../components/Button'
 import ofertaCursoService from '../api/services/ofertaCursoService'
+import { useAuth } from '../auth/AuthContext'
+import cursoMatriculadoService from '../api/services/cursoMatriculadoService'
 
 function CourseDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { usuario } = useAuth()
   const [showLoginModal, setShowLoginModal] = useState(false)
 
   const [oferta, setOferta] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [checkingEnrollment, setCheckingEnrollment] = useState(false)
+  const [isEnrolled, setIsEnrolled] = useState(false)
 
   const ofertaId = Number(id)
 
@@ -45,6 +50,29 @@ function CourseDetailPage() {
       mounted = false
     }
   }, [ofertaId])
+
+  // Verificar si el usuario ya está inscrito en esta oferta
+  useEffect(() => {
+    let active = true
+    const token = localStorage.getItem('token')
+    const idPersona = usuario?.idPersona
+    if (!token || !idPersona || !ofertaId) return
+    setCheckingEnrollment(true)
+    ;(async () => {
+      try {
+        const res = await cursoMatriculadoService.getForPerson(idPersona)
+        // Se espera estructura { mensaje, cursos: [...] }
+        const cursos = Array.isArray(res?.cursos) ? res.cursos : Array.isArray(res) ? res : []
+        const found = cursos.some((c) => Number(c?.idOferta) === Number(ofertaId))
+        if (active) setIsEnrolled(found)
+      } catch (err) {
+        console.warn('No se pudo verificar inscripción previa:', err)
+      } finally {
+        active && setCheckingEnrollment(false)
+      }
+    })()
+    return () => { active = false }
+  }, [usuario?.idPersona, ofertaId])
 
   // Datos principales
   const titulo = oferta?.curso?.nombre_curso || 'Curso'
@@ -87,6 +115,10 @@ function CourseDetailPage() {
   const handleInscribirse = () => {
     const token = localStorage.getItem('token')
     if (!token) return setShowLoginModal(true)
+    if (isEnrolled) {
+      alert('Ya estás inscrito en este curso. Te llevamos a la lista de cursos.')
+      return navigate('/cursos')
+    }
     navigate(`/pago/curso/${oferta?.id}`)
   }
 
@@ -263,9 +295,12 @@ function CourseDetailPage() {
                 </p>
               </div>
 
-              <Button onClick={handleInscribirse} variant="primary" className="w-full mb-3">
-                Inscribirse Ahora
+              <Button onClick={handleInscribirse} variant="primary" className="w-full mb-3" disabled={checkingEnrollment || isEnrolled}>
+                {isEnrolled ? 'Ya inscrito' : (checkingEnrollment ? 'Verificando…' : 'Inscribirse Ahora')}
               </Button>
+              {isEnrolled && (
+                <p className="text-sm text-green-700 text-center mb-3">Ya estás inscrito en esta oferta.</p>
+              )}
               <Button onClick={() => navigate('/cursos')} variant="secondary" className="w-full">
                 Volver a Cursos
               </Button>

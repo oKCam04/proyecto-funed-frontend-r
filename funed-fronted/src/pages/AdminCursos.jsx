@@ -4,10 +4,10 @@ import { useNavigate } from "react-router-dom";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
-import cursosService from "../api/services/cursoService"; 
+import cursosService from "../api/services/cursoService";
 
 function AdminCursosPage() {
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   const [cursos, setCursos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +35,14 @@ function AdminCursosPage() {
       try {
         setLoading(true);
         const data = await cursosService.list();
-        setCursos(Array.isArray(data) ? data : []);
+        // Mapear la respuesta del API a la estructura del estado local
+        const mappedData = data.map(curso => ({
+          ...curso,
+          nombreCurso: curso.nombre_curso,
+          tipoCurso: curso.tipo_curso,
+        }));
+        setCursos(Array.isArray(mappedData) ? mappedData : []);
+
       } catch (err) {
         console.error(err);
         setError(
@@ -96,17 +103,31 @@ function AdminCursosPage() {
       duracion: Number(duracion),
       temario,
       tipoCurso,
+      nombre_curso: nombreCurso, // Asegurar que se envían los nombres correctos al API
+      tipo_curso: tipoCurso,
     };
 
     try {
       if (editMode && id != null) {
-        const updated = await cursosService.update(id, payload);
-        setCursos((list) => list.map((c) => (c.id === updated.id ? updated : c)));
-        setSuccess(`"${updated.nombreCurso}" actualizado correctamente.`);
+        const apiResponse = await cursosService.update(id, payload);
+        setCursos((list) =>
+          list.map((c) =>
+            c.id === id
+              ? {
+                ...c, // Conserva createdAt y otras props
+                ...apiResponse, // Sobrescribe con la respuesta del API
+                ...payload, // Asegura que los campos del form estén actualizados
+                updatedAt: new Date().toISOString(), // Actualiza la fecha de modificación
+              }
+              : c
+          )
+        );
+        setSuccess(`"${payload.nombreCurso}" actualizado correctamente.`);
       } else {
-        const created = await cursosService.create(payload);
-        setCursos((list) => [created, ...list]);
-        setSuccess(`"${created.nombreCurso}" creado correctamente.`);
+        const apiResponse = await cursosService.create(payload);
+        const newCurso = { ...payload, ...apiResponse, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        setCursos((list) => [newCurso, ...list]);
+        setSuccess(`"${newCurso.nombreCurso}" creado correctamente.`);
       }
       resetForm();
     } catch (err) {
@@ -132,10 +153,10 @@ function AdminCursosPage() {
     if (!c) return;
     setFormData({
       id: c.id,
-      nombreCurso: c.nombreCurso ?? "",
+      nombreCurso: c.nombre_curso ?? "",
       duracion: c.duracion ?? "",
       temario: c.temario ?? "",
-      tipoCurso: c.tipoCurso ?? "",
+      tipoCurso: c.tipo_curso ?? "",
     });
     setEditMode(true);
     setEditOpen(true);
@@ -145,7 +166,7 @@ function AdminCursosPage() {
   const handleDelete = async (id) => {
     const c = cursos.find((x) => x.id === id);
     if (!c) return;
-    if (!window.confirm(`¿Eliminar el curso "${c.nombreCurso}"?`)) return;
+    if (!window.confirm(`¿Eliminar el curso "${c.nombre_curso}"?`)) return;
 
     try {
       await cursosService.remove(id);
@@ -163,11 +184,7 @@ function AdminCursosPage() {
   };
 
   // UI helpers
-  const tiposSugeridos = ["Técnico", "Curso corto", "Diplomado", "Seminario"];
-  const uniqueTipos = [
-    "todos",
-    ...Array.from(new Set(cursos.map((c) => c.tipoCurso).filter(Boolean))),
-  ];
+  const tiposFiltro = ["todos", "Técnico", "Corto"];
   const fmtDate = (s) => (s ? new Date(s).toLocaleString() : "");
 
   return (
@@ -223,20 +240,17 @@ function AdminCursosPage() {
                 <label className="mb-1 block text-sm font-medium text-gray-700">
                   Tipo de curso *
                 </label>
-                <input
-                  list="tipos"
+                <select
                   name="tipoCurso"
                   value={formData.tipoCurso}
                   onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
-                  placeholder="Técnico / Curso corto / …"
                   required
-                />
-                <datalist id="tipos">
-                  {tiposSugeridos.map((t) => (
-                    <option key={t} value={t} />
-                  ))}
-                </datalist>
+                >
+                  <option value="">Selecciona un tipo</option>
+                  <option value="Técnico">Técnico</option>
+                  <option value="Corto">Corto</option>
+                </select>
               </div>
             </div>
 
@@ -309,7 +323,7 @@ function AdminCursosPage() {
                 onChange={(e) => setTipoFiltro(e.target.value)}
                 className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
               >
-                {uniqueTipos.map((t) => (
+                {tiposFiltro.map((t) => (
                   <option key={t} value={t}>
                     {t === "todos" ? "Todos" : t}
                   </option>
@@ -336,9 +350,9 @@ function AdminCursosPage() {
                   <div className="flex-1">
                     <div className="mb-2 flex items-center gap-3">
                       <h3 className="text-xl font-semibold text-gray-800">
-                        {c.nombreCurso}
+                        {c.nombre_curso}
                       </h3>
-                      {c.tipoCurso && (
+                      {c.tipo_curso && (
                         <span className="rounded bg-teal-100 px-2 py-1 text-sm text-teal-800">
                           {c.tipoCurso}
                         </span>
@@ -356,10 +370,6 @@ function AdminCursosPage() {
                       </p>
                     )}
 
-                    <div className="text-sm text-gray-400">
-                      <span className="mr-4">Creado: {fmtDate(c.createdAt)}</span>
-                      <span>Actualizado: {fmtDate(c.updatedAt)}</span>
-                    </div>
                   </div>
 
                   <div className="flex gap-2">
@@ -408,19 +418,17 @@ function AdminCursosPage() {
                 <label className="mb-1 block text-sm font-medium text-gray-700">
                   Tipo de curso *
                 </label>
-                <input
-                  list="tipos"
+                <select
                   name="tipoCurso"
                   value={formData.tipoCurso}
                   onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                   required
-                />
-                <datalist id="tipos">
-                  {tiposSugeridos.map((t) => (
-                    <option key={t} value={t} />
-                  ))}
-                </datalist>
+                >
+                  <option value="">Selecciona un tipo</option>
+                  <option value="Técnico">Técnico</option>
+                  <option value="Corto">Corto</option>
+                </select>
               </div>
             </div>
 

@@ -14,7 +14,7 @@ const ofertaCursoService = {
     return data;
   },
   update: async (id, payload) => {
-    const { data } = await axiosClient.put(`/api/ofertaCursos/${id}`, payload);
+    const { data } = await axiosClient.patch(`/api/ofertaCursos/${id}`, payload);
     return data;
   },
   remove: async (id) => {

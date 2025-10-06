@@ -2,6 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Button from '../components/Button';
 import ofertaCursoService from '../api/services/ofertaCursoService';
+import pagoService from '../api/services/pagoService';
+import cursoMatriculadoService from '../api/services/cursoMatriculadoService';
+import { useAuth } from '../auth/AuthContext';
+import { supabase } from '../supabaseClient';
 
 const formatCOP = (v) =>
   typeof v === 'number'
@@ -12,8 +16,9 @@ const formatCOP = (v) =>
       })
     : 'Consultar';
 
-function ProcesoPagoPage() {
+function ProcesoPago() {
   const { id } = useParams();
+  const { usuario } = useAuth(); // Hook llamado en el nivel superior
   const [oferta, setOferta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,6 +26,7 @@ function ProcesoPagoPage() {
   const [comprobante, setComprobante] = useState(null);
   const [referencia, setReferencia] = useState('');
   const [isUploaded, setIsUploaded] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     async function loadOferta() {
@@ -45,19 +51,114 @@ function ProcesoPagoPage() {
 
   const handleFileChange = (e) => {
     if (e.target.files[0]) {
-      setComprobante(e.target.files[0]);
+      const file = e.target.files[0];
+      // Validación rápida de tamaño (<= 10MB) y tipo permitido
+      const maxBytes = 10 * 1024 * 1024;
+      const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf', 'image/webp'];
+      if (file.size > maxBytes) {
+        alert('El archivo supera el límite de 10MB.');
+        return;
+      }
+      if (!allowed.includes(file.type)) {
+        alert('Tipo de archivo no permitido. Usa PNG, JPG, WEBP o PDF.');
+        return;
+      }
+      setComprobante(file);
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  // Maneja el envío del formulario de pago.
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Previene el comportamiento por defecto del formulario.
+
+    // --- Verificación de datos iniciales ---
+    console.log('Iniciando el proceso de envío...');
+    console.log('Comprobante (archivo):', comprobante);
+    console.log('Referencia (texto):', referencia);
+    console.log('Supabase URL (mask):', (import.meta?.env?.VITE_SUPABASE_URL || '').replace(/\/([a-zA-Z0-9]{6})[a-zA-Z0-9-]+$/, '/$1***'));
+
     if (!comprobante) {
       alert('Por favor, sube el comprobante de pago.');
       return;
     }
-    console.log('Enviando pago:', { cursoId: id, referencia, comprobante: comprobante.name });
-    // Aquí iría la lógica para subir el archivo y los datos a la API
-    setIsUploaded(true);
+
+    // Obtener el id de la persona desde el contexto de autenticación.
+    const id_persona = usuario?.idPersona;
+
+    console.log('ID de persona (desde AuthContext):', id_persona);
+
+    if (!id_persona) {
+      alert('Error: No se pudo obtener la información del usuario. Por favor, inicia sesión de nuevo.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      // 1) Crear matrícula en backend
+      const matriculaData = {
+        id_curso_oferta: id,
+        id_persona,
+        estado: 'Preinscrito',
+        resultado: 'Pendiente',
+      };
+      console.log('[Matricula] -> POST /api/matriculas payload:', matriculaData);
+      const nuevaMatricula = await cursoMatriculadoService.create(matriculaData);
+      console.log('[Matricula] <- response:', nuevaMatricula);
+      const id_curso_matriculado = nuevaMatricula?.id ?? nuevaMatricula?.data?.id ?? nuevaMatricula?.resultado?.id ?? null;
+      if (!id_curso_matriculado) {
+        console.warn('[Matricula] No se pudo determinar el id de la matrícula desde la respuesta.');
+        throw new Error('No se pudo crear la matrícula.');
+      }
+
+      // 2) Subir comprobante a Supabase Storage
+      const bucket = 'pagos-funed';
+      const ext = comprobante.name.split('.').pop();
+      const fileName = `${id_persona}_${Date.now()}.${ext}`;
+      const filePath = `${id_persona}/${id}/${fileName}`;
+
+      console.log(`Subiendo comprobante a Supabase Storage -> bucket: ${bucket}, path: ${filePath}`);
+      const { error: uploadError } = await supabase
+        .storage
+        .from(bucket)
+        .upload(filePath, comprobante, { contentType: comprobante.type || 'application/octet-stream', upsert: true });
+
+      if (uploadError) {
+        console.error('Error al subir el comprobante a Supabase:', uploadError);
+        throw new Error(`No se pudo subir el comprobante. Detalle: ${uploadError.message || uploadError.error || 'error desconocido'}`);
+      }
+
+      const { data: publicData } = supabase
+        .storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+
+      const comprobante_url = publicData?.publicUrl || null;
+      console.log('Comprobante subido. Public URL:', comprobante_url);
+
+      // 3) Enviar registro de pago al backend con la URL del comprobante
+      const payload = {
+        id_persona,
+        id_curso_matriculado,
+        forma_pago: 'Nequi',
+        monto: parseFloat(oferta.precio),
+        estado: 'Pendiente',
+        comprobante: comprobante_url, // mantener nombre de campo compatible
+        comprobante_url, // también enviar explícito
+        comprobante_path: filePath,
+        referencia,
+      };
+      console.log('[Pago] -> POST /api/pagos payload:', payload);
+      const pagoResponse = await pagoService.create(payload);
+      console.log('[Pago] <- response:', pagoResponse);
+
+      setIsUploaded(true);
+    } catch (error) {
+      console.error('Error en el proceso de pago:', error);
+      alert(error?.message || 'Hubo un error al procesar tu inscripción. Por favor, intenta de nuevo.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -167,8 +268,8 @@ function ProcesoPagoPage() {
               </div>
 
               <div>
-                <Button type="submit" variant="primary" className="w-full">
-                  Confirmar y Enviar Pago
+                <Button type="submit" variant="primary" className="w-full" disabled={submitting}>
+                  {submitting ? 'Enviando...' : 'Confirmar y Enviar Pago'}
                 </Button>
               </div>
             </form>
@@ -179,4 +280,4 @@ function ProcesoPagoPage() {
   );
 }
 
-export default ProcesoPagoPage;
+export default ProcesoPago;

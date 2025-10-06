@@ -1,52 +1,53 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
+import pagoService from '../../api/services/pagoService';
 
-// Datos de ejemplo (mock data)
-const mockPagos = [
-  {
-    id: 1,
-    nombre: 'Ana Sofía Rodríguez',
-    curso: 'Maquillaje Profesional',
-    fecha: '2024-09-26',
-    imagenUrl: 'https://via.placeholder.com/300x400.png?text=Comprobante+1',
-    estado: 'pendiente',
-  },
-  {
-    id: 2,
-    nombre: 'Carlos Alberto Gómez',
-    curso: 'Estética Facial',
-    fecha: '2024-09-25',
-    imagenUrl: 'https://via.placeholder.com/300x400.png?text=Comprobante+2',
-    estado: 'pendiente',
-  },
-  {
-    id: 3,
-    nombre: 'Valentina Torres',
-    curso: 'Colorimetría y Tintes',
-    fecha: '2024-09-25',
-    imagenUrl: 'https://via.placeholder.com/300x400.png?text=Comprobante+3',
-    estado: 'aceptado',
-  },
-    {
-    id: 4,
-    nombre: 'Juan David Pérez',
-    curso: 'Corte y Peinado',
-    fecha: '2024-09-24',
-    imagenUrl: 'https://via.placeholder.com/300x400.png?text=Comprobante+4',
-    estado: 'rechazado',
-  },
-];
+// Mapeo defensivo desde backend -> UI
+const mapPagoToUI = (p) => ({
+  id: p?.id ?? p?.id_pago ?? p?.pago_id ?? Math.random(),
+  nombre: p?.nombre || p?.persona?.nombre || p?.persona?.nombre_completo || 'Estudiante',
+  curso: p?.curso || p?.curso_nombre || p?.oferta?.curso?.nombre_curso || 'Curso',
+  fecha: (p?.fecha || p?.fecha_pago || p?.created_at || '').toString().slice(0, 10),
+  imagenUrl: p?.comprobante_url || p?.comprobante || p?.imagenUrl || '',
+  estado: (p?.estado || p?.status || 'pendiente').toLowerCase(),
+});
 
 function AdminPagos() {
-  const [pagos, setPagos] = useState(mockPagos);
+  const [pagos, setPagos] = useState([]);
   const [selectedPago, setSelectedPago] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleAction = (id, newStatus) => {
-    setPagos(pagos.map(p => p.id === id ? { ...p, estado: newStatus } : p));
-    console.log(`Pago ${id} marcado como ${newStatus}`);
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const res = await pagoService.list();
+        console.log('[AdminPagos] <- lista pagos (raw):', res);
+        const arr = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+        setPagos(arr.map(mapPagoToUI));
+      } catch (err) {
+        console.error('[AdminPagos] Error listando pagos:', err);
+        setError('No se pudieron cargar los pagos');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const handleAction = async (id, newStatus) => {
+    try {
+      await pagoService.update(id, { estado: newStatus });
+      setPagos((prev) => prev.map(p => p.id === id ? { ...p, estado: newStatus } : p));
+      console.log(`[AdminPagos] Pago ${id} marcado como ${newStatus}`);
+    } catch (err) {
+      console.error('[AdminPagos] Error actualizando estado de pago:', err);
+      alert('No se pudo actualizar el estado del pago.');
+    }
   };
 
   const openModal = (pago) => {
@@ -93,6 +94,10 @@ function AdminPagos() {
           <h2 className="text-xl font-semibold text-gray-900 mb-6">
             Pagos Pendientes y Recientes
           </h2>
+          {error && <div className="mb-4 text-red-600">{error}</div>}
+          {loading ? (
+            <div className="text-gray-500">Cargando pagos…</div>
+          ) : (
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {pagos.map((pago) => (
@@ -136,6 +141,7 @@ function AdminPagos() {
               </div>
             ))}
           </div>
+          )}
         </div>
       </div>
 

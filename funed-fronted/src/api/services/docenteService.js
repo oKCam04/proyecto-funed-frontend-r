@@ -21,7 +21,7 @@ const docenteService = {
 
   // Actualizar un docente existente
   update: async (id, payload) => {
-    const { data } = await axiosClient.put(`/api/docente/${id}`, payload)
+    const { data } = await axiosClient.patch(`/api/docente/${id}`, payload)
     return data
   },
 

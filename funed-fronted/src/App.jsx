@@ -17,7 +17,9 @@ import AdminOfertaCursos from './pages/AdminOfertaCurso'
 import AdminPagos from './Admin/pages/AdminPagos';
 import EstudiantePage from './pages/EstudiantePage'
 import EstudianteCursoDetallePage from './pages/EstudianteCursoDetalle'
-import ProcesoPagoPage from './pages/ProcesoPagoPage';
+import ProcesoPago from './pages/ProcesoPago';
+import PerfilPage from './pages/PerfilPage'
+
 
 function App() {
   return (
@@ -41,7 +43,8 @@ function App() {
             <Route path="/admin/cursos/editar/:id" element={<AdminCursoForm />} />
             <Route path="/sobre-nosotros" element={<SobreNosotrosPage />} />
             <Route path="/contacto" element={<ContactoPage />} />
-            <Route path="/pago/curso/:id" element={<ProcesoPagoPage />} />
+            <Route path="/pago/curso/:id" element={<ProcesoPago/>} />
+            <Route path="/perfil" element={<PerfilPage />} />
 
             {/*Estudiante*/}
             <Route path='/Estudiante' element={<EstudiantePage/>}  />
