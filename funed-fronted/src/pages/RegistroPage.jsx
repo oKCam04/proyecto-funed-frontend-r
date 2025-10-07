@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import Button from '../components/Button'
 import personasService from '../api/services/personaService'
 import authService from '../api/services/authService'
+import emailService from '../api/services/emailService'
 
 function RegistroPage() {
   const navigate = useNavigate()
@@ -89,7 +90,19 @@ function RegistroPage() {
 
       await authService.register(registerPayload)
 
-      // 3) Redirigir a login
+      // 3) Enviar correo de bienvenida (endpoint standalone)
+      try {
+        await emailService.sendWelcome({
+          email: formData.email,
+          numero_identificacion: formData.numero_identificacion,
+          nombre: formData.nombre,
+        })
+      } catch (emailErr) {
+        // No bloquea el flujo si falla el envío de correo
+        console.warn('Fallo al enviar correo de bienvenida:', emailErr?.response?.data || emailErr?.message || emailErr)
+      }
+
+      // 4) Redirigir a login
       navigate('/login')
     } catch (err) {
       console.error(err)

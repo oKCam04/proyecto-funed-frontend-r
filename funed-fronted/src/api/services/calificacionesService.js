@@ -1,12 +1,12 @@
 import axiosClient from '../axiosClient';
 
-// Servicio de calificaciones
-// Consumo del endpoint: GET /api/calificaciones/oferta/:id_oferta_curso
-// Devuelve un arreglo de calificaciones con modulo y docente
+// Servicio de notas por módulo (por estudiante y oferta de curso)
+// Endpoint: GET /api/notas-modulo/:id_persona/:id_oferta_curso
+// Devuelve { notas: [...] } o arreglo directo
 const calificacionesService = {
-  getByOferta: async (id_oferta_curso) => {
-    const { data } = await axiosClient.get(`/api/calificaciones/oferta/${id_oferta_curso}`);
-    const list = Array.isArray(data) ? data : data?.calificaciones;
+  getNotasModuloByPersonaOferta: async (id_persona, id_oferta_curso) => {
+    const { data } = await axiosClient.get(`/api/notas-modulo/${id_persona}/${id_oferta_curso}`);
+    const list = Array.isArray(data) ? data : data?.notas;
     return Array.isArray(list) ? list : [];
   },
 };

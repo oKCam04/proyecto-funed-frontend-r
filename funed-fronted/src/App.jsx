@@ -15,10 +15,16 @@ import ContactoPage from './pages/ContactoPage'
 import AdminDocente from './pages/AdminDocentes'
 import AdminOfertaCursos from './pages/AdminOfertaCurso'
 import AdminPagos from './Admin/pages/AdminPagos';
+import AdminPagoDetalle from './Admin/pages/AdminPagoDetalle';
 import EstudiantePage from './pages/EstudiantePage'
 import EstudianteCursoDetallePage from './pages/EstudianteCursoDetalle'
 import ProcesoPago from './pages/ProcesoPago';
 import PerfilPage from './pages/PerfilPage'
+import AdminModulos from './pages/AdminModulos'
+import AdminModuloDocente from './pages/AdminModuloDocente'
+import { RequireAuth, RequireRole } from './auth/RouteGuards'
+import Unauthorized from './pages/Unauthorized'
+import NotFound from './pages/NotFound'
 
 
 function App() {
@@ -34,22 +40,29 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/registro" element={<RegistroPage />} />
             <Route path="/verificar-email" element={<EmailVerificationPage />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/cursos" element={<AdminCursos />} /> {/*crud completo de cursos*/}
-            <Route path='/admin/docentes' element={<AdminDocente/>}  /> {/* crud completo docentes*/}
-            <Route path='/admin/oferta-cursos' element={<AdminOfertaCursos/>} /> {/* crud completo oferta*/}
-            <Route path="/admin/pagos" element={<AdminPagos />} />
-            <Route path="/admin/cursos/nuevo" element={<AdminCursoForm />} />
-            <Route path="/admin/cursos/editar/:id" element={<AdminCursoForm />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="/admin" element={<RequireRole roles={["admin"]}><AdminDashboard /></RequireRole>} />
+            <Route path="/admin/cursos" element={<RequireRole roles={["admin"]}><AdminCursos /></RequireRole>} /> {/*crud completo de cursos*/}
+            <Route path='/admin/docentes' element={<RequireRole roles={["admin"]}><AdminDocente/></RequireRole>}  /> {/* crud completo docentes*/}
+            <Route path='/admin/oferta-cursos' element={<RequireRole roles={["admin"]}><AdminOfertaCursos/></RequireRole>} /> {/* crud completo oferta*/}
+            <Route path="/admin/pagos" element={<RequireRole roles={["admin"]}><AdminPagos /></RequireRole>} />
+            <Route path="/admin/pagos/:id" element={<RequireRole roles={["admin"]}><AdminPagoDetalle /></RequireRole>} />
+            <Route path="/admin/cursos/nuevo" element={<RequireRole roles={["admin"]}><AdminCursoForm /></RequireRole>} />
+            <Route path="/admin/cursos/editar/:id" element={<RequireRole roles={["admin"]}><AdminCursoForm /></RequireRole>} />
+            <Route path="/admin/modulos" element={<RequireRole roles={["admin"]}><AdminModulos /></RequireRole>} />
+            <Route path="/admin/modulo-docente" element={<RequireRole roles={["admin"]}><AdminModuloDocente /></RequireRole>} />
             <Route path="/sobre-nosotros" element={<SobreNosotrosPage />} />
             <Route path="/contacto" element={<ContactoPage />} />
-            <Route path="/pago/curso/:id" element={<ProcesoPago/>} />
-            <Route path="/perfil" element={<PerfilPage />} />
+            <Route path="/pago/curso/:id" element={<RequireAuth><ProcesoPago/></RequireAuth>} />
+            <Route path="/perfil" element={<RequireAuth><PerfilPage /></RequireAuth>} />
 
             {/*Estudiante*/}
-            <Route path='/Estudiante' element={<EstudiantePage/>}  />
-            <Route path='/Estudiante/curso/:id' element={<EstudianteCursoDetallePage/>}  />
+            <Route path='/Estudiante' element={<RequireRole roles={["Estudiante"]}><EstudiantePage/></RequireRole>}  />
+            <Route path='/Estudiante/curso/:id' element={<RequireRole roles={["Estudiante"]}><EstudianteCursoDetallePage/></RequireRole>}  />
             {/* routee*/}
+
+            {/* 404 fallback */}
+            <Route path='*' element={<NotFound />} />
           </Routes>
         </main>
         <Footer />

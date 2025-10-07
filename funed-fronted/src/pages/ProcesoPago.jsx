@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import ofertaCursoService from '../api/services/ofertaCursoService';
 import pagoService from '../api/services/pagoService';
@@ -18,6 +18,7 @@ const formatCOP = (v) =>
 
 function ProcesoPago() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { usuario } = useAuth(); // Hook llamado en el nivel superior
   const [oferta, setOferta] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -152,7 +153,13 @@ function ProcesoPago() {
       const pagoResponse = await pagoService.create(payload);
       console.log('[Pago] <- response:', pagoResponse);
 
-      setIsUploaded(true);
+      // Redirigir a perfil -> documentos con aviso
+      navigate('/perfil?tab=documentos', {
+        state: {
+          notice: 'Hemos recibido tu comprobante. Para aprobar tu inscripción, por favor sube los documentos requeridos.',
+        },
+        replace: true,
+      });
     } catch (error) {
       console.error('Error en el proceso de pago:', error);
       alert(error?.message || 'Hubo un error al procesar tu inscripción. Por favor, intenta de nuevo.');
@@ -169,22 +176,7 @@ function ProcesoPago() {
     return <div className="container mx-auto px-4 py-16 text-center text-red-600">Error: {error}</div>;
   }
 
-  if (isUploaded) {
-    return (
-        <div className="container mx-auto px-4 py-16 text-center">
-            <div className="max-w-2xl mx-auto bg-white p-10 rounded-lg shadow-xl">
-                <h1 className="text-3xl font-bold text-green-600 mb-4">¡Gracias!</h1>
-                <p className="text-gray-700 text-lg mb-6">
-                    Hemos recibido tu comprobante para el curso <span className="font-semibold">{oferta?.curso?.nombre_curso}</span>. 
-                    Tu pago será verificado en las próximas 24 horas y recibirás un correo de confirmación con los detalles de acceso.
-                </p>
-                <Link to="/cursos">
-                    <Button variant="primary">Explorar más cursos</Button>
-                </Link>
-            </div>
-        </div>
-    );
-  }
+  // Nota: ya no mostramos pantalla de "Gracias"; se redirige a Perfil->Documentos tras éxito
 
   return (
     <div className="min-h-screen bg-gray-100 py-12">
@@ -202,6 +194,7 @@ function ProcesoPago() {
             <div className="mb-6">
                 <h3 className="font-semibold text-lg text-gray-700">Resumen del Curso</h3>
                 <p className="text-gray-600">{oferta?.curso?.nombre_curso}</p>
+                
                 <p className="text-2xl font-bold text-blue-600 mt-2">{precioFormateado}</p>
             </div>
 
@@ -217,7 +210,14 @@ function ProcesoPago() {
             </div>
 
             <div className="text-center">
-                <img src="https://via.placeholder.com/300/FFFFFF/000000?text=QR+de+Pago" alt="Código QR para pago" className="mx-auto rounded-md shadow-md"/>
+                <a href="https://onxbempdrygdsayzvkyk.supabase.co/storage/v1/object/public/cursos-images/Qr/qrpago.jpeg" target="_blank" rel="noreferrer">
+                  <img 
+                    src="https://onxbempdrygdsayzvkyk.supabase.co/storage/v1/object/public/cursos-images/Qr/qrpago.jpeg" 
+                    alt="Código QR para pago"
+                    className="mx-auto rounded-md shadow-md max-w-full h-auto"
+                  />
+                </a>
+                <p className="text-xs text-gray-500 mt-2">Haz clic en la imagen para verla a tamaño completo.</p>
             </div>
              <div className="mt-6 text-sm text-gray-500">
                 <h4 className="font-semibold">¿Problemas con el pago?</h4>

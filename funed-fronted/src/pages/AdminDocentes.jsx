@@ -114,7 +114,28 @@ function AdminDocentesPage() {
         const newDocente = await docenteService.create(payload)
         const withId = { ...newDocente, id: newDocente.id || newDocente.id_docente }
         setDocentes((list) => [withId, ...list])
-        setSuccess("Docente creado correctamente.")
+        // Actualizar rol de la persona a 'Docente' (fallback si backend no lo hace)
+        try {
+          const personaRes = await personaService.getById(payload.id_persona)
+          const p = personaRes?.data || personaRes
+          const personaPayload = {
+            nombre: p?.nombre,
+            apellido: p?.apellido,
+            numero_identificacion: p?.numero_identificacion,
+            tipo: p?.tipo_identificacion,
+            fecha: p?.fecha_nacimiento,
+            telefono: p?.telefono,
+            correo: p?.correo,
+            rol: 'Docente',
+          }
+          await personaService.update(payload.id_persona, personaPayload)
+          // Refrescar lista de personas en memoria
+          setPersonas((prev) => prev.map(px => px.id === payload.id_persona ? { ...px, rol: 'Docente' } : px))
+          setSuccess("Docente creado correctamente y rol actualizado a Docente.")
+        } catch (sideErr) {
+          console.warn('[AdminDocentes] No se pudo actualizar el rol de la persona a Docente', sideErr)
+          setSuccess("Docente creado correctamente (rol de persona no actualizado).")
+        }
       }
       resetForm()
     } catch (err) {

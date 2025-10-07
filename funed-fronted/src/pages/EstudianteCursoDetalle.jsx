@@ -48,18 +48,19 @@ export default function EstudianteCursoDetallePage() {
 
   // Cargar calificaciones desde API según oferta
   useEffect(() => {
-    if (!ofertaId) return;
+    const idPersona = usuario?.idPersona;
+    if (!ofertaId || !idPersona) return;
     (async () => {
       try {
         setLoadingCalificaciones(true);
         setErrorCalificaciones("");
-        const items = await calificacionesService.getByOferta(ofertaId);
-        // Normalizar por si faltan campos
-        const mapped = (Array.isArray(items) ? items : []).map((c) => ({
-          id: c.id,
-          resultado: c.resultado || "Pendiente",
-          moduloNombre: c.modulo?.nombre || "Módulo",
-          docenteNombre: c.docente?.nombre || null,
+        const items = await calificacionesService.getNotasModuloByPersonaOferta(idPersona, ofertaId);
+        // Normalizar por si faltan campos con la nueva estructura (estado)
+        const mapped = (Array.isArray(items) ? items : []).map((n) => ({
+          id: n.id,
+          estado: n.estado || "Pendiente",
+          moduloNombre: n.modulo?.nombre || "Módulo",
+          fechaRegistro: n.fecha_registro || null,
         }));
         setCalificaciones(mapped);
       } catch (err) {
@@ -70,7 +71,7 @@ export default function EstudianteCursoDetallePage() {
         setLoadingCalificaciones(false);
       }
     })();
-  }, [ofertaId]);
+  }, [ofertaId, usuario?.idPersona]);
 
   // 🔹 Recursos desde API ContenidoApoyo (por oferta)
   const [recursos, setRecursos] = useState([]);
@@ -224,11 +225,11 @@ export default function EstudianteCursoDetallePage() {
 
   const totalModulos = modulos.length;
   const evaluadas = useMemo(
-    () => calificaciones.filter((c) => c.resultado && c.resultado !== "Pendiente"),
+    () => calificaciones.filter((c) => c.estado && c.estado !== "Pendiente"),
     [calificaciones]
   );
   const aprobadasCount = useMemo(
-    () => evaluadas.filter((c) => c.resultado === "Aprobado").length,
+    () => evaluadas.filter((c) => c.estado === "Aprobó").length,
     [evaluadas]
   );
   const promedioAprobacion = useMemo(
@@ -468,19 +469,18 @@ export default function EstudianteCursoDetallePage() {
                 >
                   <div>
                     <p className="font-semibold">{c.moduloNombre}</p>
-                    <p className="text-sm text-gray-500">{c.docenteNombre ? `Docente: ${c.docenteNombre}` : ""}</p>
                   </div>
                   <div className="text-right">
                     <span
                       className={`px-3 py-1 rounded-full text-sm ${
-                        c.resultado === "Aprobado"
+                        c.estado === "Aprobó"
                           ? "bg-green-100 text-green-600"
-                          : c.resultado === "Reprobado"
+                          : c.estado === "Desaprobó"
                           ? "bg-red-100 text-red-600"
                           : "bg-gray-100 text-gray-600"
                       }`}
                     >
-                      {c.resultado}
+                      {c.estado}
                     </span>
                   </div>
                 </div>

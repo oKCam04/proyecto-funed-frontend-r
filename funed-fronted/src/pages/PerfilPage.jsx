@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import personaService from "../api/services/personaService";
 import documentoService from "../api/services/documentoService";
@@ -7,8 +8,11 @@ import { supabase } from "../supabaseClient";
 export default function PerfilPage() {
   const { usuario, persona } = useAuth();
   const idPersona = usuario?.idPersona || persona?.id;
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("informacion"); // informacion | certificados | documentos
+  const [notice, setNotice] = useState("");
   const [form, setForm] = useState({
     nombre: "",
     apellido: "",
@@ -152,6 +156,24 @@ export default function PerfilPage() {
     };
   }, [idPersona]);
 
+  // Leer query ?tab= y state.notice para mostrar mensaje y seleccionar pestaña
+  useEffect(() => {
+    // tab desde query
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && ["informacion","certificados","documentos"].includes(tab)) {
+      setActiveTab(tab);
+    }
+    // aviso desde state
+    const incomingNotice = location.state?.notice;
+    if (incomingNotice) {
+      setNotice(incomingNotice);
+      // limpiar el state para evitar que reaparezca al navegar atrás
+      navigate(location.pathname + location.search, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+
   // Cargar documentos cuando la pestaña activa sea "documentos"
   useEffect(() => {
     const fetchDocs = async () => {
@@ -222,7 +244,7 @@ export default function PerfilPage() {
     setErrorDocs("");
     try {
       // Subir archivos seleccionados a Supabase y obtener URLs públicas
-      const bucket = "documentos-funed";
+      const bucket = "cursos-images";
       const uploadIfNeeded = async (field) => {
         const file = docFiles[field];
         if (!file) return docForm[field] || "";
@@ -319,6 +341,11 @@ export default function PerfilPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
+        {notice && (
+          <div className="mb-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-blue-800">
+            {notice}
+          </div>
+        )}
         <h1 className="text-3xl font-bold mb-4">Mi Perfil</h1>
         <p className="text-gray-600 mb-6">Actualiza tus datos personales y los requeridos para tus cursos.</p>
 
@@ -499,12 +526,12 @@ export default function PerfilPage() {
             {errorDocs && <p className="text-red-600">{errorDocs}</p>}
             {!loadingDocs && !errorDocs && (
               <form onSubmit={handleDocSubmit} className="grid md:grid-cols-2 gap-4">
-                {renderDocItem({ field: 'documento_identidad', label: 'Documento de Identidad', accept: 'image/*,application/pdf' })}
-                {renderDocItem({ field: 'foto_3x4', label: 'Foto 3x4', accept: 'image/*' })}
-                {renderDocItem({ field: 'recibo_publico', label: 'Recibo de Servicio Público', accept: 'image/*,application/pdf' })}
-                {renderDocItem({ field: 'acta_grado', label: 'Acta de Grado', accept: 'image/*,application/pdf' })}
+                {renderDocItem({ field: 'documento_identidad', label: 'Documento de Identidad', accept: 'application/pdf' })}
+                {renderDocItem({ field: 'foto_3x4', label: 'Foto 3x4', accept: 'image/*,application/pdf' })}
+                {renderDocItem({ field: 'recibo_publico', label: 'Recibo de Servicio Público', accept: 'application/pdf' })}
+                {renderDocItem({ field: 'acta_grado', label: 'Acta de Grado', accept: 'application/pdf' })}
                 <div className="md:col-span-2">
-                  {renderDocItem({ field: 'eps_salud', label: 'EPS / Salud', accept: 'image/*,application/pdf' })}
+                  {renderDocItem({ field: 'eps_salud', label: 'EPS / Salud', accept: 'application/pdf' })}
                 </div>
                 <div className="md:col-span-2 flex gap-3 mt-2">
                   <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Guardar</button>

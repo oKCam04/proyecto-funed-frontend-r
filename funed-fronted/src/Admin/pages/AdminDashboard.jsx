@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Button from '../../components/Button'
+import cursosService from '../../api/services/cursoService'
+import personaService from '../../api/services/personaService'
+import ofertaCursoService from '../../api/services/ofertaCursoService'
+import pagoService from '../../api/services/pagoService'
 
 function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -9,17 +13,65 @@ function AdminDashboard() {
     cursosActivos: 0,
     inscripcionesRecientes: 0
   })
+  const [recentPayments, setRecentPayments] = useState([])
 
   useEffect(() => {
-    // Simular carga de estadísticas
     const loadStats = async () => {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      setStats({
-        totalCursos: 12,
-        totalEstudiantes: 245,
-        cursosActivos: 8,
-        inscripcionesRecientes: 15
-      })
+      try {
+        const [cursosRes, personasRes, ofertasRes, pagosRes] = await Promise.all([
+          cursosService.list(),
+          personaService.list(),
+          ofertaCursoService.list(),
+          pagoService.list(),
+        ])
+
+        const cursos = Array.isArray(cursosRes?.data) ? cursosRes.data : (Array.isArray(cursosRes) ? cursosRes : [])
+        const personas = Array.isArray(personasRes?.data) ? personasRes.data : (Array.isArray(personasRes) ? personasRes : [])
+        const ofertas = Array.isArray(ofertasRes?.data) ? ofertasRes.data : (Array.isArray(ofertasRes) ? ofertasRes : [])
+        const pagos = Array.isArray(pagosRes?.data) ? pagosRes.data : (Array.isArray(pagosRes) ? pagosRes : [])
+
+        const now = new Date()
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+        const totalCursos = cursos.length
+        const totalEstudiantes = personas.filter(p => (p?.rol || '').toLowerCase() === 'estudiante').length
+
+        const cursosActivos = ofertas.filter(o => {
+          const inicio = o?.fecha_inicio_curso ? new Date(o.fecha_inicio_curso) : null
+          const fin = o?.fecha_fin_curso ? new Date(o.fecha_fin_curso) : null
+          if (!inicio) return false
+          const started = inicio <= now
+          const notFinished = !fin || fin >= now
+          return started && notFinished
+        }).length
+
+        const inscripcionesRecientes = pagos.filter(p => {
+          const fp = p?.fecha_pago ? new Date(p.fecha_pago) : null
+          return fp && fp >= sevenDaysAgo
+        }).length
+
+        setStats({ totalCursos, totalEstudiantes, cursosActivos, inscripcionesRecientes })
+
+        // Actividad reciente: últimos 5 pagos por fecha
+        const sorted = [...pagos]
+          .map(p => ({
+            id: p?.id ?? p?.id_pago ?? Math.random(),
+            sourceId: p?.id ?? p?.id_pago ?? p?.pago_id ?? null,
+            fecha: p?.fecha_pago || p?.fecha || p?.created_at,
+            curso:
+              p?.cursoMatriculado?.curso?.curso?.nombre_curso ||
+              p?.cursoMatriculado?.curso?.nombre_curso ||
+              p?.curso?.nombre_curso ||
+              p?.curso || '—',
+          }))
+          .filter(p => !!p.fecha)
+          .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+          .slice(0, 5)
+
+        setRecentPayments(sorted)
+      } catch (error) {
+        console.error('Error cargando estadísticas admin:', error)
+      }
     }
     loadStats()
   }, [])
@@ -33,18 +85,18 @@ function AdminDashboard() {
       color: 'bg-blue-500'
     },
     {
-      title: 'Ver Estudiantes',
-      description: 'Administrar usuarios registrados',
-      link: '/admin/estudiantes',
-      icon: '👥',
-      color: 'bg-green-500'
-    },
-    {
       title: 'Inscripciones',
       description: 'Gestionar inscripciones a cursos',
       link: '/admin/inscripciones',
       icon: '📋',
       color: 'bg-purple-500'
+    },
+    {
+      title: 'Ver Estudiantes',
+      description: 'Administrar usuarios registrados',
+      link: '/admin/estudiantes',
+      icon: '👥',
+      color: 'bg-green-500'
     },
     {
       title: 'Reportes',
@@ -55,12 +107,17 @@ function AdminDashboard() {
     }
   ]
 
-  const pagosRecientes = [
-    { id: 1, curso: 'Maquillaje Profesional', time: 'Hace 10 min' },
-    { id: 2, curso: 'Estética Facial', time: 'Hace 45 min' },
-    { id: 3, curso: 'Colorimetría y Tintes', time: 'Hace 2 horas' },
-    { id: 4, curso: 'Corte y Peinado', time: 'Ayer' }
-  ]
+  const relativeTime = (dateString) => {
+    const d = new Date(dateString)
+    const diffMs = Date.now() - d.getTime()
+    const mins = Math.floor(diffMs / 60000)
+    if (mins < 1) return 'Hace un momento'
+    if (mins < 60) return `Hace ${mins} min`
+    const hrs = Math.floor(mins / 60)
+    if (hrs < 24) return `Hace ${hrs} hora${hrs === 1 ? '' : 's'}`
+    const days = Math.floor(hrs / 24)
+    return `Hace ${days} día${days === 1 ? '' : 's'}`
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -160,13 +217,13 @@ function AdminDashboard() {
                 Actividad Reciente
               </h2>
               <div className="space-y-3">
-                {pagosRecientes.map((pago) => (
+                {recentPayments.map((pago) => (
                   <div key={pago.id} className="flex items-center justify-between border border-blue-100 rounded-lg p-3">
                     <div>
                       <p className="font-medium text-gray-900">Pago curso {pago.curso}</p>
-                      <p className="text-xs text-gray-400 mt-1">{pago.time}</p>
+                      <p className="text-xs text-gray-400 mt-1">{relativeTime(pago.fecha)}</p>
                     </div>
-                    <Link to="/admin/inscripciones">
+                    <Link to={pago.sourceId ? `/admin/pagos/${pago.sourceId}` : '/admin/pagos'}>
                       <Button>Revisar</Button>
                     </Link>
                   </div>
@@ -178,35 +235,31 @@ function AdminDashboard() {
 
         {/* Quick Course Management */}
         <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Gestión Rápida de Cursos
-            </h2>
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">Gestión Rápida de Cursos</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Link to="/admin/cursos">
-              <Button variant="primary">
-                + Crear Nuevo Curso
-              </Button>
+              <Button className="w-full" variant="primary">+ Crear Nuevo Curso</Button>
             </Link>
-            <Link to="/admin/docentes"  >
-                <Button>+ Agregar Nuevo Docente</Button>
+            <Link to="/admin/modulos">
+              <Button className="w-full">+ Gestionar Módulos</Button>
+            </Link>
+            <Link to="/admin/modulo-docente">
+              <Button className="w-full">+ Módulo Docente</Button>
+            </Link>
+            <Link to="/admin/docentes">
+              <Button className="w-full">+ Agregar Nuevo Docente</Button>
             </Link>
             <Link to="/admin/oferta-cursos">
-                <Button>+ Agregar Nueva Oferta </Button>
+              <Button className="w-full">+ Agregar Nueva Oferta</Button>
             </Link>
             <Link to="/admin/pagos">
-                <Button variant="success">+ Gestionar Pagos</Button>
-            </Link>
-          </div>
-
-          <div className="text-center py-8 text-gray-500">
-            <p className="mb-4">Accede a la gestión completa de cursos</p>
-            <Link to="/admin/cursos">
-              <Button variant="secondary">
-                Ver Todos los Cursos
-              </Button>
+              <Button className="w-full" variant="success">+ Gestionar Pagos</Button>
             </Link>
           </div>
         </div>
+
       </div>
     </div>
   )
