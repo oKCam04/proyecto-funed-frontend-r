@@ -7,6 +7,7 @@ import certificadoService from "../api/services/certificadoService";
 import contenidoApoyoService from "../api/services/contenidoApoyoService";
 import cursoMatriculadoService from "../api/services/cursoMatriculadoService";
 import ofertaCursoService from "../api/services/ofertaCursoService";
+import moduloDocenteService from "../api/services/moduloDocenteService";
 import { useAuth } from "../auth/AuthContext";
 
 export default function EstudianteCursoDetallePage() {
@@ -30,6 +31,14 @@ export default function EstudianteCursoDetallePage() {
         setLoadingModulos(true);
         setErrorModulos("");
         const mods = await moduloService.listByOfertaCurso(ofertaId);
+        // Obtener asignaciones módulo-docente para esta oferta
+        const asignaciones = await moduloDocenteService.getByOferta(ofertaId);
+        const docentePorModulo = new Map();
+        for (const a of (Array.isArray(asignaciones) ? asignaciones : [])) {
+          const modId = a?.modulo?.id ?? a?.id_modulo;
+          const docName = a?.docenteNombre || (a?.docente?.persona ? `${a.docente.persona.nombre} ${a.docente.persona.apellido}` : "");
+          if (modId && docName) docentePorModulo.set(Number(modId), docName);
+        }
         // Mapear a estructura usada en UI
         const mapped = (Array.isArray(mods) ? mods : []).map((m, idx) => ({
           id: m.id ?? idx + 1,
@@ -37,6 +46,8 @@ export default function EstudianteCursoDetallePage() {
           duracion: "",
           estado: "Pendiente",
           nota: null,
+          // Preferir nombre del docente provisto por listarModulosPorOfertaCurso; si no, usar el mapa de asignaciones
+          docente: m.docenteNombre || docentePorModulo.get(Number(m.id)) || "Docente por asignar",
         }));
         setModulos(mapped);
       } catch (err) {
@@ -349,8 +360,8 @@ export default function EstudianteCursoDetallePage() {
                 {modulo.duracion && (
                   <p className="text-sm text-gray-500">Duración: {modulo.duracion}</p>
                 )}
+                <p className="text-sm text-gray-500">Docente: {modulo.docente || "Por asignar"}</p>
               </div>
-              {/* Se solicita mostrar solo el nombre del módulo */}
             </div>
           ))}
         </div>
