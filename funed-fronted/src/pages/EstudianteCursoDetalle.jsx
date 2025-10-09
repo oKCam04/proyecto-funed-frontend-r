@@ -22,6 +22,7 @@ export default function EstudianteCursoDetallePage() {
   const [calificaciones, setCalificaciones] = useState([]);
   const [loadingCalificaciones, setLoadingCalificaciones] = useState(false);
   const [errorCalificaciones, setErrorCalificaciones] = useState("");
+  const [ultimoResultado, setUltimoResultado] = useState(null);
 
   // Cargar módulos desde API según oferta
   useEffect(() => {
@@ -84,6 +85,36 @@ export default function EstudianteCursoDetallePage() {
       }
     })();
   }, [ofertaId, usuario?.idPersona]);
+
+  // Actualizar resultado de la matrícula según calificaciones
+  useEffect(() => {
+    if (!id) return;
+    const estados = (Array.isArray(calificaciones) ? calificaciones : []).map(c => c?.estado || 'Pendiente');
+
+    let nuevoResultado;
+    if (estados.length === 0 || estados.some(e => e === 'Pendiente')) {
+      nuevoResultado = 'Pendiente';
+    } else if (estados.some(e => e === 'Desaprobó')) {
+      nuevoResultado = 'Desaprobado';
+    } else if (estados.every(e => e === 'Aprobó')) {
+      nuevoResultado = 'Aprobado';
+    } else {
+      nuevoResultado = 'Reprobado';
+    }
+
+    // Evitar parches repetidos si el resultado no cambia
+    if (nuevoResultado && nuevoResultado !== ultimoResultado) {
+      (async () => {
+        try {
+          await cursoMatriculadoService.update(id, { resultado: nuevoResultado });
+          setUltimoResultado(nuevoResultado);
+          setCertificadoDisponible(nuevoResultado === 'Aprobado');
+        } catch (e) {
+          // Silencioso: no interrumpir la vista por error al guardar
+        }
+      })();
+    }
+  }, [id, calificaciones, ultimoResultado]);
 
   // 🔹 Recursos desde API ContenidoApoyo (por oferta)
   const [recursos, setRecursos] = useState([]);
