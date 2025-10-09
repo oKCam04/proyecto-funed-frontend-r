@@ -54,7 +54,7 @@ export default function AdminOfertaEstudiantes() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
         <div className="mb-4 flex items-center gap-2">
-          <Link to="/admin/gestionar-cursos"><Button variant="outline">← Volver</Button></Link>
+          <Link to="/admin/inscripciones"><Button variant="outline">← Volver</Button></Link>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 flex items-start justify-between">

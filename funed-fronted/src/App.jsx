@@ -28,6 +28,7 @@ import { RequireAuth, RequireRole } from './auth/RouteGuards'
 import Unauthorized from './pages/Unauthorized'
 import NotFound from './pages/NotFound'
 import AdminGestionarCursos from './Admin/pages/AdminGestionarCursos'
+import AdminInscripciones from './Admin/pages/AdminInscripciones'
 import AdminCursoModulos from './Admin/pages/AdminCursoModulos'
 import AdminOfertaEstudiantes from './Admin/pages/AdminOfertaEstudiantes'
 import DocenteCursosAsignados from './pages/DocenteCursosAsignados'
@@ -64,7 +65,7 @@ function App() {
             <Route path="/admin/cursos/:id/estudiantes" element={<RequireRole roles={["admin"]}><AdminOfertaEstudiantes /></RequireRole>} />
             <Route path="/admin/modulo-docente" element={<RequireRole roles={["admin"]}><AdminModuloDocente /></RequireRole>} />
             <Route path="/admin/estudiantes" element={<RequireRole roles={["admin"]}><AdminEstudiantes /></RequireRole>} />
-            <Route path="/admin/inscripciones" element={<RequireRole roles={["admin"]}><AdminGestionarCursos /></RequireRole>} />
+            <Route path="/admin/inscripciones" element={<RequireRole roles={["admin"]}><AdminInscripciones /></RequireRole>} />
             <Route path="/sobre-nosotros" element={<SobreNosotrosPage />} />
             <Route path="/contacto" element={<ContactoPage />} />
             <Route path="/pago/curso/:id" element={<RequireAuth><ProcesoPago/></RequireAuth>} />
