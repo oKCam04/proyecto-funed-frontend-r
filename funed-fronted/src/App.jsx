@@ -34,6 +34,7 @@ import AdminOfertaEstudiantes from './Admin/pages/AdminOfertaEstudiantes'
 import DocenteCursosAsignados from './pages/DocenteCursosAsignados'
 import DocenteCursoDetalle from './pages/DocenteCursoDetalle'
 import DocenteModuloCalificar from './pages/DocenteModuloCalificar'
+import AdminGestionDatosDocentes from './pages/AdminGestionDatosDocentes'
 
 
 function App() {
@@ -66,6 +67,7 @@ function App() {
             <Route path="/admin/modulo-docente" element={<RequireRole roles={["admin"]}><AdminModuloDocente /></RequireRole>} />
             <Route path="/admin/estudiantes" element={<RequireRole roles={["admin"]}><AdminEstudiantes /></RequireRole>} />
             <Route path="/admin/inscripciones" element={<RequireRole roles={["admin"]}><AdminInscripciones /></RequireRole>} />
+            <Route path="/admin/docentes/gestionar-datos" element={<RequireRole roles={["admin"]}><AdminGestionDatosDocentes /></RequireRole>} />
             <Route path="/sobre-nosotros" element={<SobreNosotrosPage />} />
             <Route path="/contacto" element={<ContactoPage />} />
             <Route path="/pago/curso/:id" element={<RequireAuth><ProcesoPago/></RequireAuth>} />

@@ -204,7 +204,10 @@ function AdminDocentesPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
-        <div className="mb-4"><Button variant="outline" onClick={() => navigate("/admin")}>← Volver</Button></div>
+        <div className="mb-4 flex items-center justify-between">
+          <Button variant="outline" onClick={() => navigate("/admin")}>← Volver</Button>
+          <Button variant="primary" onClick={() => navigate("/admin/docentes/gestionar-datos")}>+ Gestionar Datos Docentes</Button>
+        </div>
         <h1 className="mb-8 text-center text-4xl font-bold text-gray-800">Administración de Docentes</h1>
 
         {error && <div className="mb-6 rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700">{error}</div>}
