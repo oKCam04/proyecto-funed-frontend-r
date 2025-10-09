@@ -4,6 +4,7 @@ import moduloService from "../api/services/moduloService";
 import calificacionesService from "../api/services/calificacionesService";
 import asistenciaService from "../api/services/asistenciaService";
 import certificadoService from "../api/services/certificadoService";
+import certificadoService from "../api/services/certificadoService";
 import contenidoApoyoService from "../api/services/contenidoApoyoService";
 import cursoMatriculadoService from "../api/services/cursoMatriculadoService";
 import ofertaCursoService from "../api/services/ofertaCursoService";
@@ -394,7 +395,16 @@ export default function EstudianteCursoDetallePage() {
                     alert(e?.response?.data?.message || e?.message || 'No se pudo generar el certificado');
                   }
                 }}
+                onClick={async () => {
+                  try {
+                    // id es el id de la matrícula de la ruta /Estudiante/curso/:id
+                    await certificadoService.generateAndDownload(id);
+                  } catch (e) {
+                    alert(e?.response?.data?.message || e?.message || 'No se pudo generar el certificado');
+                  }
+                }}
               >
+                Descargar certificado
                 Descargar certificado
               </button>
             </div>

@@ -7,11 +7,13 @@ import CourseDetailPage from './pages/CourseDetailPage'
 import LoginPage from './pages/LoginPage'
 import RegistroPage from './pages/RegistroPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import EmailVerificationPage from './pages/EmailVerificationPage'
 import AdminDashboard from './Admin/pages/AdminDashboard'
 import AdminCursos from './pages/AdminCursos'
 import AdminCursoForm from './pages/AdminCursoForm'
 import SobreNosotrosPage from './pages/SobreNosotrosPage'
+import AdminEstudiantes from './Admin/pages/AdminEstudiantes'
 import AdminEstudiantes from './Admin/pages/AdminEstudiantes'
 import ContactoPage from './pages/ContactoPage'
 import AdminDocente from './pages/AdminDocentes'
@@ -49,10 +51,12 @@ function App() {
             <Route path="/curso/:id" element={<CourseDetailPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/registro" element={<RegistroPage />} />
             <Route path="/verificar-email" element={<EmailVerificationPage />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/admin" element={<RequireRole roles={["admin"]}><AdminDashboard /></RequireRole>} />
+            <Route path="/admin/gestionar-cursos" element={<RequireRole roles={["admin"]}><AdminGestionarCursos /></RequireRole>} />
             <Route path="/admin/gestionar-cursos" element={<RequireRole roles={["admin"]}><AdminGestionarCursos /></RequireRole>} />
             <Route path="/admin/cursos" element={<RequireRole roles={["admin"]}><AdminCursos /></RequireRole>} /> {/*crud completo de cursos*/}
             <Route path='/admin/docentes' element={<RequireRole roles={["admin"]}><AdminDocente/></RequireRole>}  /> {/* crud completo docentes*/}
@@ -62,6 +66,8 @@ function App() {
             <Route path="/admin/cursos/nuevo" element={<RequireRole roles={["admin"]}><AdminCursoForm /></RequireRole>} />
             <Route path="/admin/cursos/editar/:id" element={<RequireRole roles={["admin"]}><AdminCursoForm /></RequireRole>} />
             <Route path="/admin/modulos" element={<RequireRole roles={["admin"]}><AdminModulos /></RequireRole>} />
+            <Route path="/admin/cursos/:id/modulos" element={<RequireRole roles={["admin"]}><AdminCursoModulos /></RequireRole>} />
+            <Route path="/admin/cursos/:id/estudiantes" element={<RequireRole roles={["admin"]}><AdminOfertaEstudiantes /></RequireRole>} />
             <Route path="/admin/cursos/:id/modulos" element={<RequireRole roles={["admin"]}><AdminCursoModulos /></RequireRole>} />
             <Route path="/admin/cursos/:id/estudiantes" element={<RequireRole roles={["admin"]}><AdminOfertaEstudiantes /></RequireRole>} />
             <Route path="/admin/modulo-docente" element={<RequireRole roles={["admin"]}><AdminModuloDocente /></RequireRole>} />
@@ -77,6 +83,11 @@ function App() {
             <Route path='/Estudiante' element={<RequireRole roles={["Estudiante"]}><EstudiantePage/></RequireRole>}  />
             <Route path='/Estudiante/curso/:id' element={<RequireRole roles={["Estudiante"]}><EstudianteCursoDetallePage/></RequireRole>}  />
             {/* routee*/}
+
+            {/* Docente */}
+            <Route path='/docente/cursos-asignados' element={<RequireRole roles={["Docente"]}><DocenteCursosAsignados/></RequireRole>} />
+            <Route path='/docente/curso/:id' element={<RequireRole roles={["Docente"]}><DocenteCursoDetalle/></RequireRole>} />
+            <Route path='/docente/curso/:id/modulo/:moduloId/calificar' element={<RequireRole roles={["Docente"]}><DocenteModuloCalificar/></RequireRole>} />
 
             {/* Docente */}
             <Route path='/docente/cursos-asignados' element={<RequireRole roles={["Docente"]}><DocenteCursosAsignados/></RequireRole>} />
