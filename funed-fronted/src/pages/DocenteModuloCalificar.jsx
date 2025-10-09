@@ -26,17 +26,20 @@ export default function DocenteModuloCalificar() {
   const normalizeEstado = (v) => {
     if (!v) return v;
     const s = String(v).toLowerCase();
-    // Importante: revisar 'desapr' ANTES que 'aprob' para evitar falsos positivos
-    if (s.includes('desapr')) return 'desaprobado';
+    // Aceptar variantes: "desaprobó", "desaprobo", "desprobó", "reprobó"
+    // Importante: revisar 'desapr'/'desprob'/'reprob' ANTES que 'aprob' para evitar falsos positivos
+    if (s.includes('desapr') || s.includes('desprob') || s.includes('reprob')) return 'desaprobado';
     if (s.includes('aprob')) return 'aprobado';
+    if (s.includes('pend')) return 'pendiente';
     return s;
   };
 
   const toBackendEstado = (v) => {
     const s = String(v).toLowerCase();
-    if (s === 'aprobado') return 'Aprobó';
-    if (s === 'desaprobado') return 'Desaprobó';
-    if (s === 'pendiente') return 'Pendiente';
+    // Importante: revisar 'desapr'/'desprob'/'reprob' ANTES que 'aprob' para evitar falsos positivos
+    if (s === 'desaprobado' || s.includes('desapr') || s.includes('desprob') || s.includes('reprob')) return 'Desaprobó';
+    if (s === 'aprobado' || s.includes('aprob')) return 'Aprobó';
+    if (s === 'pendiente' || s.includes('pend')) return 'Pendiente';
     return v;
   };
 
@@ -111,6 +114,7 @@ export default function DocenteModuloCalificar() {
     setErrorGuardar("");
     setSavingPersonaId(id_persona);
     setSavingTargetEstado(estado);
+    console.log("[Calificar] Set estado", { id_persona, estado_ui: estado, estado_backend: toBackendEstado(estado) });
     const estadoPrevio = estadoPorPersona[id_persona];
     // Cambio visual inmediato del botón
     setEstadoPorPersona((prev) => ({ ...prev, [id_persona]: estado }));
@@ -119,21 +123,26 @@ export default function DocenteModuloCalificar() {
       let notaActualizada;
       if (idNota) {
         // Actualizar estado vía PATCH por ID de nota existente
+        console.log("[Calificar] PATCH /api/notas-modulo/:id", { idNota, estado: toBackendEstado(estado) });
         notaActualizada = await calificacionesService.updateNota(idNota, toBackendEstado(estado));
       } else {
         // Crear/actualizar (upsert) nota para esta persona en este módulo y oferta
-        notaActualizada = await calificacionesService.upsertNotaModulo({
+        const payload = {
           id_persona,
           id_oferta_curso: Number(ofertaId),
           id_modulo: Number(moduloId),
           estado: toBackendEstado(estado),
-        });
+        };
+        console.log("[Calificar] POST /api/notas-modulo", payload);
+        notaActualizada = await calificacionesService.upsertNotaModulo(payload);
       }
 
+      console.log("[Calificar] Respuesta guardar", notaActualizada);
       // Tras guardar, refrescar desde backend para asegurar persistencia real
       const nuevoId = notaActualizada?.id ?? idNota;
       if (nuevoId) setNotaIdPorPersona((prev) => ({ ...prev, [id_persona]: nuevoId }));
       const notasRefrescadas = await calificacionesService.listByModuloOferta(Number(moduloId), Number(ofertaId));
+      console.log("[Calificar] Refrescar notas", { cantidad: (notasRefrescadas || []).length });
       const ids = {};
       const estados = {};
       for (const n of (notasRefrescadas || [])) {
@@ -145,6 +154,7 @@ export default function DocenteModuloCalificar() {
       setNotaIdPorPersona(ids);
       setEstadoPorPersona(estados);
     } catch (err) {
+      console.error("[Calificar] Error guardando estado", err);
       setErrorGuardar(err?.response?.data?.mensaje || err.message || "Error al guardar el estado");
       // Revertir visual si falla
       setEstadoPorPersona((prev) => ({ ...prev, [id_persona]: estadoPrevio }));
