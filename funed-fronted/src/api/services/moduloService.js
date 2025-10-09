@@ -37,6 +37,13 @@ const moduloService = {
     // El backend responde { mensaje, modulos }
     return data?.modulos ?? data
   },
+
+  // Listar módulos asignados a un docente (id_persona) para una oferta específica
+  listByDocenteOferta: async (id_persona, id_oferta_curso) => {
+    const { data } = await axiosClient.get(`/api/modulos/docente/${id_persona}/oferta/${id_oferta_curso}`)
+    // El backend responde { mensaje, modulos }
+    return Array.isArray(data?.modulos) ? data.modulos : Array.isArray(data) ? data : []
+  },
 }
 
 export default moduloService

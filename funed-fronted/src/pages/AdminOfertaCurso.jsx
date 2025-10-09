@@ -197,8 +197,14 @@ function AdminOfertaCursosPage() {
 
   const renderFormFields = () => (
     <>
-        <input type="number" name="codigo_curso" value={formData.codigo_curso} onChange={handleChange} placeholder="Código del curso" className="w-full rounded border px-4 py-2" required />
-        <Select
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="codigo_curso">Código del curso</label>
+          <input id="codigo_curso" type="number" name="codigo_curso" value={formData.codigo_curso} onChange={handleChange} className="w-full rounded border px-4 py-2" required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="id_curso">Curso</label>
+          <Select
+            inputId="id_curso"
             name="id_curso"
             options={cursoOptions}
             styles={selectStyles}
@@ -209,13 +215,38 @@ function AdminOfertaCursosPage() {
             placeholder="Selecciona o busca un curso..."
             value={cursoOptions.find(option => option.value === formData.id_curso)}
             onChange={handleCursoChange}
-        />
-        <input type="date" name="fecha_inicio_curso" value={formData.fecha_inicio_curso} onChange={handleChange} className="w-full rounded border px-4 py-2" required />
-        <input type="date" name="fecha_fin_curso" value={formData.fecha_fin_curso} onChange={handleChange} className="w-full rounded border px-4 py-2" required />
-        <input type="text" name="horario" value={formData.horario} onChange={handleChange} placeholder="Horario (ej: Lun-Vie 8-12)" className="w-full rounded border px-4 py-2" required />
-        <input type="number" name="cupos" value={formData.cupos} onChange={handleChange} placeholder="Cupos" className="w-full rounded border px-4 py-2" required />
-        <input type="text" name="precio" value={formData.precio} onChange={handleChange} placeholder="Precio (ej: 450.00)" className="w-full rounded border px-4 py-2" required />
-        <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-2">Foto de la Oferta</label><div className="mt-2 flex items-center gap-4">{previewUrl && <img src={previewUrl} alt="Previsualización" className="w-24 h-24 object-cover rounded-md shadow-sm" />}<div className="flex-1"><input type="file" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/><p className="text-xs text-gray-500 mt-1">Sube una imagen para la tarjeta de la oferta.</p></div></div></div>
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="fecha_inicio_curso">Fecha de inicio</label>
+          <input id="fecha_inicio_curso" type="date" name="fecha_inicio_curso" value={formData.fecha_inicio_curso} onChange={handleChange} className="w-full rounded border px-4 py-2" required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="fecha_fin_curso">Fecha de fin</label>
+          <input id="fecha_fin_curso" type="date" name="fecha_fin_curso" value={formData.fecha_fin_curso} onChange={handleChange} className="w-full rounded border px-4 py-2" required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="horario">Horario</label>
+          <input id="horario" type="text" name="horario" value={formData.horario} onChange={handleChange} placeholder="Ej: Lun-Vie 8-12" className="w-full rounded border px-4 py-2" required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="cupos">Cupos</label>
+          <input id="cupos" type="number" name="cupos" value={formData.cupos} onChange={handleChange} className="w-full rounded border px-4 py-2" required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="precio">Precio</label>
+          <input id="precio" type="text" name="precio" value={formData.precio} onChange={handleChange} placeholder="Ej: 450.00" className="w-full rounded border px-4 py-2" required />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Foto de la oferta</label>
+          <div className="mt-2 flex items-center gap-4">
+            {previewUrl && <img src={previewUrl} alt="Previsualización" className="w-24 h-24 object-cover rounded-md shadow-sm" />}
+            <div className="flex-1">
+              <input type="file" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+              <p className="text-xs text-gray-500 mt-1">Sube una imagen para la tarjeta de la oferta.</p>
+            </div>
+          </div>
+        </div>
     </>
   )
 

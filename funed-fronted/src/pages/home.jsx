@@ -1,8 +1,10 @@
 import Card from '../components/Card'
 import FunedLogo from '../components/FunedLogo'
 import Navbar from '../components/Navbar'
+import { useNavigate } from 'react-router-dom'
 
 function Home() {
+  const navigate = useNavigate()
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -19,7 +21,7 @@ function Home() {
           <h1 className="text-5xl font-bold mb-4">Academia de Belleza Funed</h1>
           <p className="text-xl mb-8">Tu centro de formación profesional en belleza y estética</p>
           <p className="text-lg mb-8 text-blue-200">Educación a tu Alcance</p>
-          <button className="bg-white text-blue-800 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg">
+          <button onClick={() => navigate('/cursos')} className="bg-white text-blue-800 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg">
             Descubre Nuestros Cursos
           </button>
         </div>

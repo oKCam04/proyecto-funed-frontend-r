@@ -150,7 +150,7 @@ function CursoCard({ curso, navigate }) {
       try {
         setLoadingProg(true);
         // Obtener total de módulos por oferta
-        const mods = await moduloService.getByOferta(curso.idOferta);
+        const mods = await moduloService.listByOfertaCurso(curso.idOferta);
         const total = Array.isArray(mods) ? mods.length : 0;
         // Obtener calificaciones y contar las evaluadas (no Pendiente)
         const cals = await calificacionesService.getByOferta(curso.idOferta);

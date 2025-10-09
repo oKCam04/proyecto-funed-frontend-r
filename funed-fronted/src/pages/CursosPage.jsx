@@ -19,6 +19,14 @@ function CursosPage() {
         })
       : 'Consultar'
 
+  const formatDateLong = (date) => {
+    if (!date) return '-'
+    const d = new Date(date)
+    return isNaN(d) 
+      ? '-' 
+      : d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })
+  }
+
   useEffect(() => {
     ofertaCursoService
       .list()
@@ -33,9 +41,18 @@ function CursosPage() {
       })
   }, [])
 
-  const filtered = ofertas.filter((o) =>
-    (o?.curso?.nombreCurso || '').toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const filtered = ofertas.filter((o) => {
+    const name = (o?.curso?.nombre_curso || '').toLowerCase()
+    const matchesName = name.includes(searchTerm.toLowerCase())
+    const start = o?.fecha_inicio_curso ? new Date(o.fecha_inicio_curso) : null
+    if (!start) return false
+    start.setHours(0, 0, 0, 0)
+    // Solo mostrar ofertas con fecha de inicio estrictamente posterior a hoy
+    return matchesName && start > today
+  })
 
   if (loading) return <div className="p-6">Cargando cursos…</div>
   if (error) return <div className="p-6 text-red-600">Error: {error}</div>
@@ -76,7 +93,7 @@ function CursosPage() {
                 className="w-full h-48 object-cover rounded-lg mb-4"
               />
               <h3 className="text-xl font-semibold text-gray-800 mb-1">
-                {o.curso?.nombreCurso ?? 'Curso'}
+                {o.curso?.nombre_curso ?? 'Curso'}
               </h3>
               <p className="text-gray-500 mb-4">Código: {o.codigo_curso ?? '-'}</p>
 
@@ -84,17 +101,13 @@ function CursosPage() {
                 <div className="flex justify-between">
                   <span className="opacity-70">Inicio</span>
                   <span>
-                    {o.fecha_inicio_curso
-                      ? new Date(o.fecha_inicio_curso).toLocaleDateString()
-                      : '-'}
+                    {formatDateLong(o.fecha_inicio_curso)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="opacity-70">Fin</span>
                   <span>
-                    {o.fecha_fin_curso
-                      ? new Date(o.fecha_fin_curso).toLocaleDateString()
-                      : '-'}
+                    {formatDateLong(o.fecha_fin_curso)}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -116,7 +129,7 @@ function CursosPage() {
               </div>
 
               <div className="text-2xl font-bold text-green-600 mb-4 text-right">
-                {o.precio ? formatCOP(parseFloat(o.precio)) : ''}
+                {o.precio ? formatCOP(parseFloat(o.precio)) : 'Consultar'}
               </div>
 
               <div className="flex justify-between items-center">
