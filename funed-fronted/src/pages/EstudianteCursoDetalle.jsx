@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import moduloService from "../api/services/moduloService";
 import calificacionesService from "../api/services/calificacionesService";
 import asistenciaService from "../api/services/asistenciaService";
+import certificadoService from "../api/services/certificadoService";
 import contenidoApoyoService from "../api/services/contenidoApoyoService";
 import cursoMatriculadoService from "../api/services/cursoMatriculadoService";
 import ofertaCursoService from "../api/services/ofertaCursoService";
@@ -28,7 +29,7 @@ export default function EstudianteCursoDetallePage() {
       try {
         setLoadingModulos(true);
         setErrorModulos("");
-        const mods = await moduloService.getByOferta(ofertaId);
+        const mods = await moduloService.listByOfertaCurso(ofertaId);
         // Mapear a estructura usada en UI
         const mapped = (Array.isArray(mods) ? mods : []).map((m, idx) => ({
           id: m.id ?? idx + 1,
@@ -349,22 +350,7 @@ export default function EstudianteCursoDetallePage() {
                   <p className="text-sm text-gray-500">Duración: {modulo.duracion}</p>
                 )}
               </div>
-              <div className="flex items-center gap-4">
-                <span
-                  className={`px-3 py-1 rounded-full text-sm ${
-                    modulo.estado === "Completado"
-                      ? "bg-green-100 text-green-600"
-                      : modulo.estado === "En Progreso"
-                      ? "bg-blue-100 text-blue-600"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {modulo.estado}
-                </span>
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                  {modulo.estado === "Completado" ? "Revisar ▶" : "Continuar ▶"}
-                </button>
-              </div>
+              {/* Se solicita mostrar solo el nombre del módulo */}
             </div>
           ))}
         </div>
@@ -389,9 +375,16 @@ export default function EstudianteCursoDetallePage() {
               </div>
               <button
                 className="bg-blue-700 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
-                onClick={() => alert(`Solicitud enviada para: ${oferta?.curso?.nombre_curso || oferta?.curso?.nombreCurso || "Curso"}`)}
+                onClick={async () => {
+                  try {
+                    // id es el id de la matrícula de la ruta /Estudiante/curso/:id
+                    await certificadoService.generateAndDownload(id);
+                  } catch (e) {
+                    alert(e?.response?.data?.message || e?.message || 'No se pudo generar el certificado');
+                  }
+                }}
               >
-                Solicitar certificado
+                Descargar certificado
               </button>
             </div>
             <div className="mt-4 text-sm text-gray-600">

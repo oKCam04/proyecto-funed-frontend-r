@@ -14,6 +14,12 @@ const authService = {
     });
     return data; // estructura que devuelva tu backend
   },
+
+  // Recuperación de contraseña: envía contraseña temporal al correo
+  forgotPassword: async (email) => {
+    const { data } = await axiosClient.post('/auth/forgot-password', { email });
+    return data; // { message: '...' }
+  },
 };
 
 export default authService;

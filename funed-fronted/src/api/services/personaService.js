@@ -18,6 +18,15 @@ const personasService = {
     const { data } = await axiosClient.patch(`/api/personas/${id}`, payload);
     return data;
   },
+
+  // Listar personas activas matriculadas por oferta de curso
+  // Endpoint backend: GET /api/personas/oferta/:id_oferta_curso/activos
+  listActivosByOferta: async (id_oferta_curso) => {
+    const { data } = await axiosClient.get(`/api/personas/oferta/${id_oferta_curso}/activos`);
+    // El backend puede responder arreglo directo o { personas: [...] }
+    const list = Array.isArray(data) ? data : data?.personas;
+    return Array.isArray(list) ? list : [];
+  },
 };
 
 export default personasService;

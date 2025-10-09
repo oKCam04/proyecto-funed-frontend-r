@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import personaService from "../api/services/personaService";
 import documentoService from "../api/services/documentoService";
+import authService from "../api/services/authService";
+import usuarioService from "../api/services/usuarioService";
 import { supabase } from "../supabaseClient";
 
 export default function PerfilPage() {
@@ -11,7 +13,7 @@ export default function PerfilPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState("informacion"); // informacion | certificados | documentos
+  const [activeTab, setActiveTab] = useState("informacion"); // informacion | documentos
   const [notice, setNotice] = useState("");
   const [form, setForm] = useState({
     nombre: "",
@@ -27,6 +29,12 @@ export default function PerfilPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [editing, setEditing] = useState(false);
+
+  // Estado para cambiar contraseña
+  const [pwdForm, setPwdForm] = useState({ current: "", next: "", confirm: "" });
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [pwdError, setPwdError] = useState("");
+  const [pwdSuccess, setPwdSuccess] = useState("");
 
   // Documentos
   const [doc, setDoc] = useState(null);
@@ -161,7 +169,7 @@ export default function PerfilPage() {
     // tab desde query
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
-    if (tab && ["informacion","certificados","documentos"].includes(tab)) {
+    if (tab && ["informacion","documentos"].includes(tab)) {
       setActiveTab(tab);
     }
     // aviso desde state
@@ -336,6 +344,52 @@ export default function PerfilPage() {
     }
   };
 
+  // Handlers cambio de contraseña
+  const handlePwdChange = (e) => {
+    const { name, value } = e.target;
+    setPwdForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePwdSubmit = async (e) => {
+    e.preventDefault();
+    setPwdSaving(true);
+    setPwdError("");
+    setPwdSuccess("");
+    try {
+      if (!usuario?.id || !usuario?.email || !usuario?.idPersona) {
+        throw new Error("No hay datos de usuario en sesión");
+      }
+      const current = (pwdForm.current || "").trim();
+      const next = (pwdForm.next || "").trim();
+      const confirm = (pwdForm.confirm || "").trim();
+      if (!current || !next || !confirm) throw new Error("Completa todos los campos");
+      if (next.length < 6) throw new Error("La nueva contraseña debe tener al menos 6 caracteres");
+      if (next !== confirm) throw new Error("La confirmación no coincide");
+
+      // Validar contraseña actual con login
+      try {
+        await authService.login(usuario.email, current);
+      } catch (err) {
+        const status = err?.response?.status;
+        if (status === 401) throw new Error("La contraseña actual es incorrecta");
+        throw new Error(err?.response?.data?.message || err.message || "Error validando contraseña actual");
+      }
+
+      const payload = {
+        id_persona: usuario.idPersona,
+        email: usuario.email,
+        password: next,
+      };
+      await usuarioService.update(usuario.id, payload);
+      setPwdSuccess("Contraseña actualizada correctamente");
+      setPwdForm({ current: "", next: "", confirm: "" });
+    } catch (e) {
+      setPwdError(e?.response?.data?.message || e.message || "Error al cambiar contraseña");
+    } finally {
+      setPwdSaving(false);
+    }
+  };
+
   if (loading) return <div className="container mx-auto px-4 py-8">Cargando perfil…</div>;
 
   return (
@@ -358,14 +412,6 @@ export default function PerfilPage() {
             onClick={() => setActiveTab("informacion")}
           >
             Información
-          </button>
-          <button
-            className={`pb-2 -mb-px ${
-              activeTab === "certificados" ? "border-b-2 border-blue-600 font-semibold" : "text-gray-500"
-            }`}
-            onClick={() => setActiveTab("certificados")}
-          >
-            Certificados
           </button>
           <button
             className={`pb-2 -mb-px ${
@@ -405,7 +451,7 @@ export default function PerfilPage() {
               </div>
             </div>
 
-            {/* Contenedor derecho: información personal (lectura/edición) */}
+            {/* Contenedor centro: información personal (lectura/edición) */}
             <div className="md:col-span-2">
               {!editing ? (
                 <div className="bg-white p-6 rounded-lg shadow-md">
@@ -498,17 +544,66 @@ export default function PerfilPage() {
                 </form>
               )}
             </div>
+
+            {/* Sección: Cambiar contraseña (debajo de Información Personal) */}
+            <div className="md:col-span-2 md:col-start-2">
+              <div className="bg-white p-6 rounded-lg shadow-md mt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Cambiar contraseña</h2>
+                </div>
+                {pwdError && (
+                  <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-700">{pwdError}</div>
+                )}
+                {pwdSuccess && (
+                  <div className="mb-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-green-700">{pwdSuccess}</div>
+                )}
+                <form onSubmit={handlePwdSubmit} className="grid md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm text-slate-700 font-medium mb-1">Contraseña actual</label>
+                    <input
+                      type="password"
+                      name="current"
+                      value={pwdForm.current}
+                      onChange={handlePwdChange}
+                      className="w-full border border-blue-300 rounded-md p-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-700 font-medium mb-1">Nueva contraseña</label>
+                    <input
+                      type="password"
+                      name="next"
+                      value={pwdForm.next}
+                      onChange={handlePwdChange}
+                      className="w-full border border-blue-300 rounded-md p-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-700 font-medium mb-1">Confirmar nueva contraseña</label>
+                    <input
+                      type="password"
+                      name="confirm"
+                      value={pwdForm.confirm}
+                      onChange={handlePwdChange}
+                      className="w-full border border-blue-300 rounded-md p-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="md:col-span-2 flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={pwdSaving}
+                      className={`px-4 py-2 rounded-md text-white ${pwdSaving ? "bg-blue-300" : "bg-blue-600 hover:bg-blue-700"}`}
+                    >
+                      {pwdSaving ? "Guardando…" : "Guardar nueva contraseña"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Contenido: Certificados */}
-        {activeTab === "certificados" && (
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-2">Certificados</h2>
-            <p className="text-gray-600">Consulta y solicita tus certificados desde el detalle de cada curso aprobado.</p>
-            <p className="text-sm text-gray-500 mt-2">Próximamente agregaremos este listado aquí.</p>
-          </div>
-        )}
+        
 
         {/* Contenido: Documentos */}
         {activeTab === "documentos" && (

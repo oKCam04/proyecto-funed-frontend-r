@@ -80,7 +80,7 @@ function AdminDashboard() {
     {
       title: 'Gestionar Cursos',
       description: 'Crear, editar y eliminar cursos',
-      link: '/admin/cursos',
+      link: '/admin/gestionar-cursos',
       icon: '📚',
       color: 'bg-blue-500'
     },
@@ -98,13 +98,7 @@ function AdminDashboard() {
       icon: '👥',
       color: 'bg-green-500'
     },
-    {
-      title: 'Reportes',
-      description: 'Ver estadísticas y reportes',
-      link: '/admin/reportes',
-      icon: '📊',
-      color: 'bg-orange-500'
-    }
+    // Reportes eliminado según solicitud
   ]
 
   const relativeTime = (dateString) => {
@@ -240,19 +234,22 @@ function AdminDashboard() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Link to="/admin/cursos">
-              <Button className="w-full" variant="primary">+ Crear Nuevo Curso</Button>
+              <Button className="w-full" variant="primary">+ Gestionar Cursos</Button>
+            </Link>
+            <Link to="/admin/inscripciones">
+              <Button className="w-full" variant="primary">+ Inscripciones</Button>
             </Link>
             <Link to="/admin/modulos">
               <Button className="w-full">+ Gestionar Módulos</Button>
             </Link>
-            <Link to="/admin/modulo-docente">
-              <Button className="w-full">+ Módulo Docente</Button>
-            </Link>
             <Link to="/admin/docentes">
-              <Button className="w-full">+ Agregar Nuevo Docente</Button>
+              <Button className="w-full">+ Gestionar Docentes</Button>
             </Link>
             <Link to="/admin/oferta-cursos">
-              <Button className="w-full">+ Agregar Nueva Oferta</Button>
+              <Button className="w-full">+ Gestionar Ofertas</Button>
+            </Link>
+            <Link to="/admin/estudiantes">
+              <Button className="w-full">+ Gestionar Estudiantes</Button>
             </Link>
             <Link to="/admin/pagos">
               <Button className="w-full" variant="success">+ Gestionar Pagos</Button>
