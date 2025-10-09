@@ -4,7 +4,6 @@ import moduloService from "../api/services/moduloService";
 import calificacionesService from "../api/services/calificacionesService";
 import asistenciaService from "../api/services/asistenciaService";
 import certificadoService from "../api/services/certificadoService";
-import certificadoService from "../api/services/certificadoService";
 import contenidoApoyoService from "../api/services/contenidoApoyoService";
 import cursoMatriculadoService from "../api/services/cursoMatriculadoService";
 import ofertaCursoService from "../api/services/ofertaCursoService";

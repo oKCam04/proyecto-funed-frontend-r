@@ -205,14 +205,6 @@ function AdminOfertaCursosPage() {
           <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="id_curso">Curso</label>
           <Select
             inputId="id_curso"
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="codigo_curso">Código del curso</label>
-          <input id="codigo_curso" type="number" name="codigo_curso" value={formData.codigo_curso} onChange={handleChange} className="w-full rounded border px-4 py-2" required />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="id_curso">Curso</label>
-          <Select
-            inputId="id_curso"
             name="id_curso"
             options={cursoOptions}
             styles={selectStyles}
