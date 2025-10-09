@@ -96,7 +96,8 @@ export default function AdminOfertaEstudiantes() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Identificación</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"># Identificación</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correo</th>
                   </tr>
                 </thead>
@@ -104,7 +105,8 @@ export default function AdminOfertaEstudiantes() {
                   {filtered.map((e) => (
                     <tr key={`est-${e.id}`}>
                       <td className="px-4 py-2 whitespace-nowrap">{`${e?.nombre || ''} ${e?.apellido || ''}`.trim() || '—'}</td>
-                      <td className="px-4 py-2 whitespace-nowrap">{e?.numero_identificacion || '—'}</td>
+                      <td className="px-4 py-2 whitespace-nowrap">{e?.numero_identificacion ?? e?.numeroIdentificacion ?? '—'}</td>
+                      <td className="px-4 py-2 whitespace-nowrap">{e?.tipo_identificacion ?? e?.tipoIdentificacion ?? '—'}</td>
                       <td className="px-4 py-2 whitespace-nowrap">{e?.correo || '—'}</td>
                     </tr>
                   ))}
