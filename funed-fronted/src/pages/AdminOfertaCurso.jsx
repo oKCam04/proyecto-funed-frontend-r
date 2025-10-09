@@ -216,6 +216,10 @@ function AdminOfertaCursosPage() {
             value={cursoOptions.find(option => option.value === formData.id_curso)}
             onChange={handleCursoChange}
           />
+          {/* Mostrar tipo de curso seleccionado (Técnico/Corto) */}
+          <p className="mt-1 text-sm text-gray-600">
+            Tipo de curso: { (cursos.find(c => c.id === formData.id_curso)?.tipo_curso) || '—' }
+          </p>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="fecha_inicio_curso">Fecha de inicio</label>
@@ -285,6 +289,7 @@ function AdminOfertaCursosPage() {
                         <div className="flex-grow">
                         <h3 className="text-lg font-semibold">{curso?.nombre_curso || `Curso ID: ${o.id_curso}`}</h3>
                         <p className="text-sm text-gray-500">Código de Oferta: {o.codigo_curso}</p>
+                        <p className="text-sm text-gray-600">Tipo: {curso?.tipo_curso ?? '—'}</p>
                         <p>Horario: {o.horario}</p>
                         <p>Cupos: {o.cupos}</p>
                         <p>Inicio: {new Date(o.fecha_inicio_curso).toLocaleDateString()} – Fin: {new Date(o.fecha_fin_curso).toLocaleDateString()}</p>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Button from '../../components/Button'
 import ofertaCursoService from '../../api/services/ofertaCursoService'
+import cursosService from '../../api/services/cursoService'
 // métricas eliminadas: no se requieren servicios de estudiantes/módulos aquí
 
 function AdminInscripciones() {
@@ -10,6 +11,8 @@ function AdminInscripciones() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [statusFilter, setStatusFilter] = useState('Todos') // Todos | Activo | Terminado | Inactivo
+  const [tipoFilter, setTipoFilter] = useState('Todos') // Todos | Técnico | Corto
+  const [courseTypeById, setCourseTypeById] = useState({})
   
 
   useEffect(() => {
@@ -23,6 +26,26 @@ function AdminInscripciones() {
         active && setError('Error al cargar ofertas')
       } finally {
         active && setLoading(false)
+      }
+    })()
+    return () => { active = false }
+  }, [])
+
+  // Cargar cursos para obtener tipo_curso (Técnico/Corto)
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      try {
+        const cursos = await cursosService.list().catch(() => [])
+        const map = {}
+        for (const c of Array.isArray(cursos) ? cursos : []) {
+          const id = c?.id
+          const tipo = c?.tipo_curso ?? c?.tipoCurso
+          if (id) map[id] = tipo || ''
+        }
+        active && setCourseTypeById(map)
+      } catch {
+        active && setCourseTypeById({})
       }
     })()
     return () => { active = false }
@@ -43,12 +66,21 @@ function AdminInscripciones() {
     return 'Inactivo'
   }
 
-  // Filtro por estado igual a Gestionar Cursos
+  // Normalizador para comparar tipos (elimina acentos)
+  const normalize = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+  // Filtro por estado y tipo de curso
   const filtered = useMemo(() => {
     const list = Array.isArray(ofertas) ? ofertas : []
-    if (statusFilter === 'Todos') return list
-    return list.filter((o) => getOfferStatus(o) === statusFilter)
-  }, [ofertas, statusFilter])
+    return list.filter((o) => {
+      const statusOk = statusFilter === 'Todos' || getOfferStatus(o) === statusFilter
+      const tipoReal = o?.curso?.tipo_curso ?? courseTypeById[o?.id_curso] ?? ''
+      const tipoNorm = normalize(tipoReal)
+      const tipoTarget = tipoFilter === 'Todos' ? 'todos' : normalize(tipoFilter)
+      const tipoOk = tipoFilter === 'Todos' || tipoNorm === tipoTarget
+      return statusOk && tipoOk
+    })
+  }, [ofertas, statusFilter, tipoFilter, courseTypeById])
 
   // métricas eliminadas
 
@@ -100,6 +132,26 @@ function AdminInscripciones() {
               ))}
             </div>
 
+            {/* Filtros por tipo de curso */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {["Todos", "Técnico", "Corto"].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTipoFilter(t)}
+                  className={`px-3 py-1.5 rounded-full border text-sm ${
+                    tipoFilter === t
+                      ? t === 'Técnico'
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-purple-600 text-white border-purple-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
             {loading && (
               <div className="text-gray-500">Cargando ofertas…</div>
             )}
@@ -127,6 +179,7 @@ function AdminInscripciones() {
                     </div>
                     <div className="flex flex-wrap items-center gap-6 text-gray-600 text-sm">
                       <span className="inline-flex items-center gap-2">Código: {o?.codigo_curso ?? '—'}</span>
+                      <span className="inline-flex items-center gap-2">Tipo: {o?.curso?.tipo_curso ?? courseTypeById[o?.id_curso] ?? '—'}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
